@@ -89,6 +89,11 @@ class ExampleTab(Tab, example_tab_class):
 
         self.displayWidget = WMCBlobDisplay()
         self.horizontalLayout.addWidget(self.displayWidget)
+        self.displayWidget.setBlob(0, 100, 200)
+        self.displayWidget.setBlob(1, 200, 200)
+        self.displayWidget.setBlob(2, 300, 200)
+        self.displayWidget.setBlob(3, 200, 100)
+        self.displayWidget.setTPattern(0, 2, 1, 3)
 
     def _connected(self, link_uri):
         """Callback when the Crazyflie has been connected"""
