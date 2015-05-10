@@ -49,6 +49,8 @@ from cfclient.ui.tab import Tab
 from cflib.crazyflie.log import LogConfig, Log
 from cflib.crazyflie.param import Param
 
+from cfclient.ui.widgets.wmc import WMCBlobDisplay
+
 example_tab_class = uic.loadUiType(sys.path[0] +
                                 "/cfclient/ui/tabs/exampleTab.ui")[0]
 
@@ -84,6 +86,9 @@ class ExampleTab(Tab, example_tab_class):
 
         self._helper.cf.disconnected.add_callback(
             self._disconnected_signal.emit)
+
+        self.displayWidget = WMCBlobDisplay()
+        self.horizontalLayout.addWidget(self.displayWidget)
 
     def _connected(self, link_uri):
         """Callback when the Crazyflie has been connected"""
