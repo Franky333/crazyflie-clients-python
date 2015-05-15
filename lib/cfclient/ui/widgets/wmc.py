@@ -58,7 +58,7 @@ class WMCBlobDisplay(QtGui.QWidget):
         painter.begin(self)
         painter.fillRect(0, 0, width, height, QtGui.QColor(0, 0, 0))
 
-        if self.left is not -1:
+        if (self.left is not -1) and (self.blobs[0] is not None) and (self.blobs[1] is not None) and (self.blobs[2] is not None) and (self.blobs[3] is not None):
             left = self._scaleBlob(self.blobs[self.left])
             right = self._scaleBlob(self.blobs[self.right])
             center = self._scaleBlob(self.blobs[self.center])
