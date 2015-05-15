@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 #
-#     ||          ____  _ __
+# ||          ____  _ __
 #  +------+      / __ )(_) /_______________ _____  ___
 #  | 0xBC |     / __  / / __/ ___/ ___/ __ `/_  / / _ \
 #  +------+    / /_/ / / /_/ /__/ /  / /_/ / / /_/  __/
@@ -38,6 +38,16 @@ __all__ = ['ExampleTab']
 import logging
 import sys
 
+
+# wmc status
+WMC_STATUS_OK = 0
+WMC_STATUS_BLOBCOUNT_LOW_ERROR = 1
+WMC_STATUS_BLOBCOUNT_HIGH_ERROR = 2
+WMC_STATUS_PATTERN_ERROR = 3
+# posCtrl modes
+POSCTRL_MODE_PATTERN = 0
+POSCTRL_MODE_POINT = 1
+
 logger = logging.getLogger(__name__)
 
 from PyQt4 import QtCore, QtGui, uic
@@ -52,7 +62,8 @@ from cflib.crazyflie.param import Param
 from cfclient.ui.widgets.wmc import WMCBlobDisplay
 
 example_tab_class = uic.loadUiType(sys.path[0] +
-                                "/cfclient/ui/tabs/exampleTab.ui")[0]
+                                   "/cfclient/ui/tabs/exampleTab.ui")[0]
+
 
 class ExampleTab(Tab, example_tab_class):
     """Tab for plotting logging data"""
@@ -101,6 +112,7 @@ class ExampleTab(Tab, example_tab_class):
         logger.debug("Crazyflie connected to {}".format(link_uri))
 
         wmc_conf = LogConfig("WiiMoteCam", 50)
+        wmc_conf.add_variable("wmc.blobsValid")
         wmc_conf.add_variable("wmc.blob_0_x")
         wmc_conf.add_variable("wmc.blob_0_y")
         wmc_conf.add_variable("wmc.blob_1_x")
@@ -113,6 +125,7 @@ class ExampleTab(Tab, example_tab_class):
         wmc_conf.add_variable("wmc.pattern_l")
         wmc_conf.add_variable("wmc.pattern_m")
         wmc_conf.add_variable("wmc.pattern_r")
+        wmc_conf.add_variable("pos.wmcStatus")
 
         self._helper.cf.log.add_config(wmc_conf)
         if wmc_conf.valid:
@@ -135,14 +148,30 @@ class ExampleTab(Tab, example_tab_class):
 
         logger.debug("{0}:{1}:{2}".format(timestamp, log_conf.name, data))
 
-        self.displayWidget.setBlob(0, data["wmc.blob_0_x"], data["wmc.blob_0_y"])
-        self.displayWidget.setBlob(1, data["wmc.blob_1_x"], data["wmc.blob_1_y"])
-        self.displayWidget.setBlob(2, data["wmc.blob_2_x"], data["wmc.blob_2_y"])
-        self.displayWidget.setBlob(3, data["wmc.blob_3_x"], data["wmc.blob_3_y"])
-        self.displayWidget.setTPattern(data["wmc.pattern_l"],
-                                       data["wmc.pattern_r"],
-                                       data["wmc.pattern_m"],
-                                       data["wmc.pattern_f"])
+        if data["wmc.blobsValid"] & (1 << 0):
+            self.displayWidget.setBlob(0, data["wmc.blob_0_x"], data["wmc.blob_0_y"])
+        else:
+            self.displayWidget.clearBlob(0)
+        if data["wmc.blobsValid"] & (1 << 1):
+            self.displayWidget.setBlob(1, data["wmc.blob_1_x"], data["wmc.blob_1_y"])
+        else:
+            self.displayWidget.clearBlob(1)
+        if data["wmc.blobsValid"] & (1 << 2):
+            self.displayWidget.setBlob(2, data["wmc.blob_2_x"], data["wmc.blob_2_y"])
+        else:
+            self.displayWidget.clearBlob(2)
+        if data["wmc.blobsValid"] & (1 << 3):
+            self.displayWidget.setBlob(3, data["wmc.blob_3_x"], data["wmc.blob_3_y"])
+        else:
+            self.displayWidget.clearBlob(3)
+
+        if data["pos.wmcStatus"] == WMC_STATUS_OK or data["pos.wmcStatus"] == WMC_STATUS_PATTERN_ERROR:  # TODO: also check if param posCtrl.mode==POSCTRL_MODE_PATTERN
+            self.displayWidget.setTPattern(data["wmc.pattern_l"],
+                                           data["wmc.pattern_r"],
+                                           data["wmc.pattern_m"],
+                                           data["wmc.pattern_f"])
+        else:
+            self.displayWidget.clearTPattern()
 
 
     def _logging_error(self, log_conf, msg):
