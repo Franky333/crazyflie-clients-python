@@ -100,6 +100,26 @@ class ExampleTab(Tab, example_tab_class):
 
         logger.debug("Crazyflie connected to {}".format(link_uri))
 
+        wmc_conf = LogConfig("WiiMoteCam", 50)
+        wmc_conf.add_variable("wmc.blob_0_x")
+        wmc_conf.add_variable("wmc.blob_0_y")
+        wmc_conf.add_variable("wmc.blob_1_x")
+        wmc_conf.add_variable("wmc.blob_1_y")
+        wmc_conf.add_variable("wmc.blob_2_x")
+        wmc_conf.add_variable("wmc.blob_2_y")
+        wmc_conf.add_variable("wmc.blob_3_x")
+        wmc_conf.add_variable("wmc.blob_3_y")
+        wmc_conf.add_variable("wmc.pattern_f")
+        wmc_conf.add_variable("wmc.pattern_l")
+        wmc_conf.add_variable("wmc.pattern_m")
+        wmc_conf.add_variable("wmc.pattern_r")
+
+        self._helper.cf.log.add_config(wmc_conf)
+        if wmc_conf.valid:
+            wmc_conf.data_received_cb.add_callback(self._log_data_signal.emit)
+            wmc_conf.start()
+
+
     def _disconnected(self, link_uri):
         """Callback for when the Crazyflie has been disconnected"""
 
@@ -114,6 +134,16 @@ class ExampleTab(Tab, example_tab_class):
         """Callback when the log layer receives new data"""
 
         logger.debug("{0}:{1}:{2}".format(timestamp, log_conf.name, data))
+
+        self.displayWidget.setBlob(0, data["wmc.blob_0_x"], data["wmc.blob_0_y"])
+        self.displayWidget.setBlob(1, data["wmc.blob_1_x"], data["wmc.blob_1_y"])
+        self.displayWidget.setBlob(2, data["wmc.blob_2_x"], data["wmc.blob_2_y"])
+        self.displayWidget.setBlob(3, data["wmc.blob_3_x"], data["wmc.blob_3_y"])
+        self.displayWidget.setTPattern(data["wmc.pattern_l"],
+                                       data["wmc.pattern_r"],
+                                       data["wmc.pattern_m"],
+                                       data["wmc.pattern_f"])
+
 
     def _logging_error(self, log_conf, msg):
         """Callback from the log layer when an error occurs"""
