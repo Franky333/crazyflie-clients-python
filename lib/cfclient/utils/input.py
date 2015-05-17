@@ -346,7 +346,7 @@ class JoystickReader:
 
             # Thust limiting (slew, minimum and emergency stop)
             if self._springy_throttle:
-                if althold and self._has_pressure_sensor:
+                if althold and self._has_pressure_sensor and 0:
                     thrust = int(round(JoystickReader.deadband(thrust,0.2)*32767 + 32767)) #Convert to uint16
                 else:
                     if raw_thrust < 0.05 or emergency_stop:

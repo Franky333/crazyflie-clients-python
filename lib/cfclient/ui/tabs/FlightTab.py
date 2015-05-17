@@ -108,7 +108,7 @@ class FlightTab(Tab, flight_tab_class):
                                      self._emergency_stop_updated_signal.emit)
         
         self.helper.inputDeviceReader.althold_updated.add_callback(
-                    lambda enabled: self.helper.cf.param.set_value("flightmode.althold", enabled))
+                    lambda enabled: self.helper.cf.param.set_value("flightmode.posCtrl", enabled))
 
         self._imu_data_signal.connect(self._imu_data_received)
         self._baro_data_signal.connect(self._baro_data_received)
