@@ -25,35 +25,35 @@
    </property>
    <item>
     <layout class="QGridLayout" name="gridLayout">
-     <item row="2" column="1">
+     <item row="3" column="1">
       <widget class="QLabel" name="label_posAlt">
        <property name="text">
         <string>Altitude [mm]</string>
        </property>
       </widget>
      </item>
-     <item row="4" column="1">
+     <item row="5" column="1">
       <widget class="QLabel" name="label_posX">
        <property name="text">
         <string>Position X [mm]</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="1">
+     <item row="1" column="1">
       <widget class="QLabel" name="_label_mode">
        <property name="text">
         <string>posCtrl-Mode: Pattern</string>
        </property>
       </widget>
      </item>
-     <item row="6" column="1">
+     <item row="7" column="1">
       <widget class="QLabel" name="label_posY">
        <property name="text">
         <string>Position Y [mm]</string>
        </property>
       </widget>
      </item>
-     <item row="0" column="2">
+     <item row="1" column="2">
       <widget class="QPushButton" name="_pushButton_posCtrlMode">
        <property name="enabled">
         <bool>false</bool>
@@ -63,42 +63,7 @@
        </property>
       </widget>
      </item>
-     <item row="2" column="2">
-      <widget class="QLabel" name="_label_value_altitude">
-       <property name="text">
-        <string>0.0</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="2">
-      <widget class="QLabel" name="_label_value_yaw">
-       <property name="text">
-        <string>0.0</string>
-       </property>
-      </widget>
-     </item>
-     <item row="3" column="1">
-      <widget class="QLabel" name="label_Yaw">
-       <property name="text">
-        <string>Yaw Angle [°]</string>
-       </property>
-      </widget>
-     </item>
-     <item row="4" column="2">
-      <widget class="QLabel" name="_label_value_x">
-       <property name="text">
-        <string>0.0</string>
-       </property>
-      </widget>
-     </item>
-     <item row="6" column="2">
-      <widget class="QLabel" name="_label_value_y">
-       <property name="text">
-        <string>0.0</string>
-       </property>
-      </widget>
-     </item>
-     <item row="10" column="1">
+     <item row="11" column="1">
       <spacer name="verticalSpacer">
        <property name="orientation">
         <enum>Qt::Vertical</enum>
@@ -111,18 +76,67 @@
        </property>
       </spacer>
      </item>
-     <item row="1" column="1">
+     <item row="3" column="2">
+      <widget class="QLabel" name="_label_value_altitude">
+       <property name="text">
+        <string>0.0</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="2">
+      <widget class="QLabel" name="_label_value_yaw">
+       <property name="text">
+        <string>0.0</string>
+       </property>
+      </widget>
+     </item>
+     <item row="4" column="1">
+      <widget class="QLabel" name="label_Yaw">
+       <property name="text">
+        <string>Yaw Angle [°]</string>
+       </property>
+      </widget>
+     </item>
+     <item row="5" column="2">
+      <widget class="QLabel" name="_label_value_x">
+       <property name="text">
+        <string>0.0</string>
+       </property>
+      </widget>
+     </item>
+     <item row="7" column="2">
+      <widget class="QLabel" name="_label_value_y">
+       <property name="text">
+        <string>0.0</string>
+       </property>
+      </widget>
+     </item>
+     <item row="2" column="1">
       <widget class="QLabel" name="label_stat">
        <property name="text">
         <string>Status</string>
        </property>
       </widget>
      </item>
-     <item row="1" column="2">
+     <item row="2" column="2">
       <widget class="QLabel" name="_label_value_status">
        <property name="autoFillBackground">
         <bool>false</bool>
        </property>
+       <property name="text">
+        <string>Not Connected</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="1">
+      <widget class="QLabel" name="label_posctrl">
+       <property name="text">
+        <string>posCtrl</string>
+       </property>
+      </widget>
+     </item>
+     <item row="0" column="2">
+      <widget class="QLabel" name="_label_value_posCtrl">
        <property name="text">
         <string>Not Connected</string>
        </property>

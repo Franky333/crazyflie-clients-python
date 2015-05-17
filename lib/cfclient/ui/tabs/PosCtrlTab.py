@@ -106,6 +106,7 @@ class PosCtrlTab(Tab, posctrl_tab_class):
 
         self._pushButton_posCtrlMode.clicked.connect(self._pushbutton_posctrlmode_clicked)
 
+        self._helper.cf.param.add_update_callback(group="flightmode", name="posCtrl", cb=self._param_updated_signal.emit)
         self._helper.cf.param.add_update_callback(group="posCtrl", name="mode", cb=self._param_updated_signal.emit)
 
     def _pushbutton_posctrlmode_clicked(self):
@@ -157,6 +158,7 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         """Callback for when the Crazyflie has been disconnected"""
         logger.debug("Crazyflie disconnected from {}".format(link_uri))
 
+        self._label_value_posCtrl.setText("Not Connected")
         self._label_value_status.setText("Not Connected")
         self._pushButton_posCtrlMode.setEnabled(False)
 
@@ -165,15 +167,27 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         """Callback when the registered parameter get's updated"""
         logger.debug("Updated {0} to {1}".format(name, value))
 
-        if not self._pushButton_posCtrlMode.isEnabled():
-            self._pushButton_posCtrlMode.setEnabled(True)
+        if str(name) == "flightmode.posCtrl":
+            if eval(str(value)) == 1:
+                self._label_value_posCtrl.setText("Active")
+                self._label_value_posCtrl.setStyleSheet('color: green')
+            elif eval(str(value)) == 0:
+                self._label_value_posCtrl.setText("Inactive")
+                self._label_value_posCtrl.setStyleSheet('color: red')
+            else:
+                self._label_value_posCtrl.setText("Unknown")
+                self._label_value_posCtrl.setStyleSheet('color: red')
 
-        if eval(str(value)) == POSCTRL_MODE_PATTERN:
-            self._label_mode.setText("posCtrl-Mode: Pattern")
-        elif eval(str(value)) == POSCTRL_MODE_POINT:
-            self._label_mode.setText("posCtrl-Mode: Point")
-        else:
-            self._label_mode.setText("posCtrl-Mode: unknown")
+        elif str(name) == "posCtrl.mode":
+            if not self._pushButton_posCtrlMode.isEnabled():
+                self._pushButton_posCtrlMode.setEnabled(True)
+
+            if eval(str(value)) == POSCTRL_MODE_PATTERN:
+                self._label_mode.setText("posCtrl-Mode: Pattern")
+            elif eval(str(value)) == POSCTRL_MODE_POINT:
+                self._label_mode.setText("posCtrl-Mode: Point")
+            else:
+                self._label_mode.setText("posCtrl-Mode: unknown")
 
 
     def _log_data_received(self, timestamp, data, log_conf):
