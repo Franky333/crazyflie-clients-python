@@ -162,7 +162,6 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         self._label_value_status.setText("Not Connected")
         self._pushButton_posCtrlMode.setEnabled(False)
 
-
     def _param_updated(self, name, value):
         """Callback when the registered parameter get's updated"""
         logger.debug("Updated {0} to {1}".format(name, value))
@@ -189,7 +188,6 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             else:
                 self._label_mode.setText("posCtrl-Mode: unknown")
 
-
     def _log_data_received(self, timestamp, data, log_conf):
         """Callback when the log layer receives new data"""
         logger.debug("{0}:{1}:{2}".format(timestamp, log_conf.name, data))
@@ -213,7 +211,7 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             else:
                 self.displayWidget.clearBlob(3)
 
-            if data["pos.wmcStatus"] == WMC_STATUS_OK or data["pos.wmcStatus"] == WMC_STATUS_PATTERN_ERROR:  # TODO: also check if param posCtrl.mode==POSCTRL_MODE_PATTERN
+            if data["pos.wmcStatus"] == WMC_STATUS_OK or data["pos.wmcStatus"] == WMC_STATUS_PATTERN_ERROR:
                 self.displayWidget.setTPattern(data["wmc.pattern_l"],
                                                data["wmc.pattern_r"],
                                                data["wmc.pattern_m"],
@@ -242,7 +240,6 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             self._label_value_yaw.setText("{0:.02f}".format(data["pos.yaw"]))
             self._label_value_x.setText("{0:.02f}".format(data["pos.x"]))
             self._label_value_y.setText("{0:.02f}".format(data["pos.y"]))
-
 
     def _logging_error(self, log_conf, msg):
         """Callback from the log layer when an error occurs"""

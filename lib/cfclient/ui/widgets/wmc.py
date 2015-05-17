@@ -23,7 +23,7 @@ class WMCBlobDisplay(QtGui.QWidget):
     def setBlob(self, blobId, x, y):
         if blobId > 3 or blobId < 0:
             return
-        self.blobs[blobId] = QtCore.QPoint(x, y)
+        self.blobs[blobId] = QtCore.QPoint(WMCBlobDisplay.WMC_Y_RES - y, WMCBlobDisplay.WMC_X_RES - x)
         self.repaint()
 
     def setTPattern(self, l, r, c, f):
@@ -83,5 +83,5 @@ class WMCBlobDisplay(QtGui.QWidget):
         painter.end()
 
     def _scaleBlob(self, blob):
-        return QtCore.QPoint((blob.x() / WMCBlobDisplay.WMC_X_RES) * self.width(),
-                             (blob.y() / WMCBlobDisplay.WMC_Y_RES) * self.height())
+        return QtCore.QPoint((blob.x() / WMCBlobDisplay.WMC_Y_RES) * self.width(),
+                             (blob.y() / WMCBlobDisplay.WMC_X_RES) * self.height())
