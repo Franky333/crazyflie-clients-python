@@ -36,6 +36,10 @@ __all__ = ['PosCtrlTab']
 import logging
 import sys
 
+import math
+from pyaudio import PyAudio
+from threading import Thread
+from Queue import Queue
 
 # wmc status
 WMC_STATUS_OK = 0
@@ -45,6 +49,30 @@ WMC_STATUS_PATTERN_ERROR = 3
 # posCtrl modes
 POSCTRL_MODE_PATTERN = 0
 POSCTRL_MODE_POINT = 1
+
+# sound code from http://askubuntu.com/questions/202355/how-to-play-a-fixed-frequency-sound-using-python
+# audio configuration
+BEEP_BITRATE = 16000
+BEEP_LENGTH = 0.2
+
+BEEP_IN_FREQUENCY = 880
+BEEP_OUT_FREQUENCY = 440
+
+# computed paramters
+BEEP_NUMBEROFFRAMES = int(BEEP_BITRATE * BEEP_LENGTH)
+BEEP_RESTFRAMES = BEEP_NUMBEROFFRAMES % BEEP_BITRATE
+
+BEEP_IN_WAVEDATA = ''
+BEEP_OUT_WAVEDATA = ''
+
+for x in xrange(BEEP_NUMBEROFFRAMES):
+    BEEP_IN_WAVEDATA += chr(int(math.sin(x / ((BEEP_BITRATE / BEEP_IN_FREQUENCY) / (2*math.pi)))*127+128))
+    BEEP_OUT_WAVEDATA += chr(int(math.sin(x / ((BEEP_BITRATE / BEEP_OUT_FREQUENCY) / (2*math.pi)))*127+128))
+
+#fill remainder of frameset with silence
+for x in xrange(BEEP_RESTFRAMES):
+    BEEP_IN_WAVEDATA += chr(128)
+    BEEP_OUT_WAVEDATA += chr(128)
 
 logger = logging.getLogger(__name__)
 
@@ -109,6 +137,14 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         self._helper.cf.param.add_update_callback(group="flightmode", name="posCtrl", cb=self._param_updated_signal.emit)
         self._helper.cf.param.add_update_callback(group="posCtrl", name="mode", cb=self._param_updated_signal.emit)
 
+        self.oldStatus = None
+
+        self.beepQueue = Queue()
+        self.worker = BeepThread(self.beepQueue)
+        self.worker.setDaemon(True)
+        self.worker.start()
+
+
     def _pushbutton_posctrlmode_clicked(self):
         if self._label_mode.text() == "posCtrl-Mode: Point":
             self._label_mode.setText("posCtrl-Mode: Pattern")
@@ -152,7 +188,6 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         if pos_conf.valid:
             pos_conf.data_received_cb.add_callback(self._log_data_signal.emit)
             pos_conf.start()
-
 
     def _disconnected(self, link_uri):
         """Callback for when the Crazyflie has been disconnected"""
@@ -211,29 +246,41 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             else:
                 self.displayWidget.clearBlob(3)
 
-            if data["pos.wmcStatus"] == WMC_STATUS_OK or data["pos.wmcStatus"] == WMC_STATUS_PATTERN_ERROR:
-                self.displayWidget.setTPattern(data["wmc.pattern_l"],
-                                               data["wmc.pattern_r"],
-                                               data["wmc.pattern_m"],
-                                               data["wmc.pattern_f"])
-            else:
-                self.displayWidget.clearTPattern()
+            if data["pos.wmcStatus"] is not self.oldStatus:
+                if data["pos.wmcStatus"] == WMC_STATUS_OK or data["pos.wmcStatus"] == WMC_STATUS_PATTERN_ERROR:
+                    self.displayWidget.setTPattern(data["wmc.pattern_l"],
+                                                   data["wmc.pattern_r"],
+                                                   data["wmc.pattern_m"],
+                                                   data["wmc.pattern_f"])
+                else:
+                    self.displayWidget.clearTPattern()
 
-            if data["pos.wmcStatus"] == WMC_STATUS_OK:
-                self._label_value_status.setText("OK")
-                self._label_value_status.setStyleSheet('color: green')
-            elif data["pos.wmcStatus"] == WMC_STATUS_BLOBCOUNT_LOW_ERROR:
-                self._label_value_status.setText("Error: blobcount too low")
-                self._label_value_status.setStyleSheet('color: red')
-            elif data["pos.wmcStatus"] == WMC_STATUS_BLOBCOUNT_HIGH_ERROR:
-                self._label_value_status.setText("Error: blobcount too high")
-                self._label_value_status.setStyleSheet('color: red')
-            elif data["pos.wmcStatus"] == WMC_STATUS_PATTERN_ERROR:
-                self._label_value_status.setText("Error: pattern recognition fail")
-                self._label_value_status.setStyleSheet('color: red')
-            else:
-                self._label_value_status.setText("Unknown Status")
-                self._label_value_status.setStyleSheet('color: red')
+                if data["pos.wmcStatus"] == WMC_STATUS_OK:
+                    self._label_value_status.setText("OK")
+                    self._label_value_status.setStyleSheet('color: green')
+                elif data["pos.wmcStatus"] == WMC_STATUS_BLOBCOUNT_LOW_ERROR:
+                    self._label_value_status.setText("Error: blobcount too low")
+                    self._label_value_status.setStyleSheet('color: red')
+                elif data["pos.wmcStatus"] == WMC_STATUS_BLOBCOUNT_HIGH_ERROR:
+                    self._label_value_status.setText("Error: blobcount too high")
+                    self._label_value_status.setStyleSheet('color: red')
+                elif data["pos.wmcStatus"] == WMC_STATUS_PATTERN_ERROR:
+                    self._label_value_status.setText("Error: pattern recognition fail")
+                    self._label_value_status.setStyleSheet('color: red')
+                else:
+                    self._label_value_status.setText("Unknown Status")
+                    self._label_value_status.setStyleSheet('color: red')
+
+                if data["pos.wmcStatus"] == WMC_STATUS_OK:
+                    with self.beepQueue.mutex:
+                        self.beepQueue.queue.clear()
+                    self.beepQueue.put(BEEP_IN_WAVEDATA)
+                elif self.oldStatus == WMC_STATUS_OK:
+                    with self.beepQueue.mutex:
+                        self.beepQueue.queue.clear()
+                    self.beepQueue.put(BEEP_OUT_WAVEDATA)
+
+                self.oldStatus = data["pos.wmcStatus"]
 
         elif log_conf.name == "Position":
             self._label_value_altitude.setText("{0:.02f}".format(data["pos.alt"]))
@@ -247,3 +294,30 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         QMessageBox.about(self, "Example error",
                           "Error when using log config"
                           " [{0}]: {1}".format(log_conf.name, msg))
+
+
+class BeepThread(Thread):
+
+    def __init__(self, queue):
+        Thread.__init__(self)
+        self.soundStream = None
+        self.pyAudio = None
+        self.queue = queue
+
+    def __del__(self):
+        if self.pyAudio:
+            self.soundStream.stop_stream()
+            self.soundStream.close()
+            self.pyAudio.terminate()
+
+    def run(self):
+        self.pyAudio = PyAudio()
+        self.soundStream = self.pyAudio.open(format = self.pyAudio.get_format_from_width(1),
+                        channels = 1,
+                        rate = BEEP_BITRATE,
+                        output = True)
+
+        while True:
+            sound = self.queue.get()
+            self.soundStream.write(sound)
+            self.queue.task_done()
