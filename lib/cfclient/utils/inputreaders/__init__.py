@@ -38,6 +38,7 @@ __all__ = ['InputDevice']
 import os
 import glob
 import logging
+from cfclient.utils.inputreaderinterface import InputReaderInterface
 
 logger = logging.getLogger(__name__)
 
@@ -75,15 +76,17 @@ def devices():
                                                      reader))
     return available_devices
 
-class InputDevice():
+class InputDevice(InputReaderInterface):
     def __init__(self, dev_name, dev_id, dev_reader):
-        self._reader = dev_reader
-        self.id = dev_id
-        self.name = dev_name
-        self.input_map = None
-        self.data = None
-        self._prev_pressed = None
-        self.reader_name = dev_reader.name
+        super(InputDevice, self).__init__(dev_name, dev_id, dev_reader)
+
+        # All devices supports mapping (and can be configured)
+        self.supports_mapping = True
+
+        # Limit roll/pitch/yaw/thrust for all devices
+        self.limit_rp = True
+        self.limit_thrust = True
+        self.limit_yaw = True
 
     def open(self):
         self.data = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0,
@@ -95,7 +98,7 @@ class InputDevice():
         self._reader.open(self.id)
 
     def close(self):
-        self._reader.close()
+        self._reader.close(self.id)
 
     def _zero_all_buttons(self):
         buttons = ("estop", "exit", "althold", "alt1", "alt2", "rollPos",
@@ -104,7 +107,7 @@ class InputDevice():
             self.data[b] = False
 
     def read(self, include_raw=False):
-        [axis, buttons] = self._reader.read()
+        [axis, buttons] = self._reader.read(self.id)
 
         # To support split axis we need to zero all the axis
         self.data["roll"] = 0.0
@@ -145,4 +148,8 @@ class InputDevice():
         if include_raw:
             return [axis, buttons, self.data]
         else:
+            #logger.warning(self.data)
+            #if self.id == 0:
+            #    logger.info("{}".format(self.input_map["Input.AXIS-3"]["key"]))
+            #    logger.info("{}:{}".format(self.id, self.data["thrust"]))
             return self.data
