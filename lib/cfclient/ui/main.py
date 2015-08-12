@@ -37,9 +37,10 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+import PyQt4
 from PyQt4 import QtGui, uic
 from PyQt4.QtCore import pyqtSignal, Qt, pyqtSlot, QDir, QUrl
-from PyQt4.QtGui import QLabel, QActionGroup, QMessageBox, QAction, QDesktopServices
+from PyQt4.QtGui import QLabel, QActionGroup, QMessageBox, QAction, QDesktopServices, QMenu
 
 from dialogs.connectiondialogue import ConnectDialogue
 from dialogs.inputconfigdialogue import InputConfigDialogue
@@ -153,14 +154,18 @@ class MainUI(QtGui.QMainWindow, main_window_class):
         self.connectDialogue = ConnectDialogue()
 
         # Create and start the Input Reader
-        self._statusbar_label = QLabel("Loading device and configuration.")
+        self._statusbar_label = QLabel("No input-device found, insert one to"
+                                       " fly.")
         self.statusBar().addWidget(self._statusbar_label)
 
         self.joystickReader = JoystickReader()
         self._active_device = ""
-        self.configGroup = QActionGroup(self._menu_mappings, exclusive=True)
-        self._load_input_data()
-        ConfigManager().conf_needs_reload.add_callback(self._reload_configs)
+        #self.configGroup = QActionGroup(self._menu_mappings, exclusive=True)
+
+        self._mux_group = QActionGroup(self._menu_inputdevice, exclusive=True)
+
+        # TODO: Need to reload configs
+        #ConfigManager().conf_needs_reload.add_callback(self._reload_configs)
 
         # Connections for the Connect Dialogue
         self.connectDialogue.requestConnectionSignal.connect(self.cf.open_link)
@@ -292,24 +297,34 @@ class MainUI(QtGui.QMainWindow, main_window_class):
         except Exception as e:
             logger.warning("Exception while opening tabs [{}]".format(e))
 
+        # References to all the device sub-menus in the "Input device" menu
+        self._all_device_menus = ()
+        # Used to filter what new devices to add default mapping to
+        self._available_devices = ()
+        # Keep track of mux nodes so we can enable according to how many
+        # devices we have
+        self._all_mux_nodes = ()
+
         # Check which Input muxes are available
-        self._mux_group = QActionGroup(self._menu_mux, exclusive=True)
+        self._mux_group = QActionGroup(self._menu_inputdevice, exclusive=True)
         for m in self.joystickReader.available_mux():
-            node = QAction(m,
-                           self._menu_mux,
+            node = QAction(m.name,
+                           self._menu_inputdevice,
                            checkable=True,
-                           enabled=True)
+                           enabled=False)
             node.toggled.connect(self._mux_selected)
             self._mux_group.addAction(node)
-            self._menu_mux.addAction(node)
-        # TODO: Temporary
-        self._input_dev_stack = []
-        self._menu_mux.actions()[0].setChecked(True)
-
-        if Config().get("enable_input_muxing"):
-            self._menu_mux.setEnabled(True)
-        else:
-            logger.info("Input device muxing disabled in config")
+            self._menu_inputdevice.addAction(node)
+            self._all_mux_nodes += (node, )
+            mux_subnodes = ()
+            for name in m.supported_roles():
+                sub_node = QMenu("\t{}".format(name),
+                                   self._menu_inputdevice,
+                                   enabled=False)
+                self._menu_inputdevice.addMenu(sub_node)
+                mux_subnodes += (sub_node, )
+                self._all_device_menus += (sub_node, )
+            node.setData((m, mux_subnodes))
 
         self._mapping_support = True
 
@@ -369,11 +384,12 @@ class MainUI(QtGui.QMainWindow, main_window_class):
         self._menu_devices.clear()
         self._active_device = ""
         self.joystickReader.stop_input()
-        for c in self._menu_mappings.actions():
-            c.setEnabled(False)
-        devs = self.joystickReader.available_devices()
-        if (len(devs) > 0):
-            self.device_discovery(devs)
+
+        #for c in self._menu_mappings.actions():
+        #    c.setEnabled(False)
+        #devs = self.joystickReader.available_devices()
+        #if (len(devs) > 0):
+        #    self.device_discovery(devs)
 
     def _show_input_device_config_dialog(self):
         self.inputConfig = InputConfigDialogue(self.joystickReader)
@@ -460,171 +476,170 @@ class MainUI(QtGui.QMainWindow, main_window_class):
         self.cf.close_link()
         QMessageBox.critical(self, "Input device error", error)
 
-    def _load_input_data(self):
-        self.joystickReader.stop_input()
-        # Populate combo box with available input device configurations
-        for c in ConfigManager().get_list_of_configs():
-            node = QAction(c,
-                           self._menu_mappings,
-                           checkable=True,
-                           enabled=False)
-            node.toggled.connect(self._inputconfig_selected)
-            self.configGroup.addAction(node)
-            self._menu_mappings.addAction(node)
-
-    def _reload_configs(self, newConfigName):
-        # remove the old actions from the group and the menu
-        for action in self._menu_mappings.actions():
-            self.configGroup.removeAction(action)
-        self._menu_mappings.clear()
-
-        # reload the conf files, and populate the menu
-        self._load_input_data()
-
-        self._update_input(self._active_device, newConfigName)
-
-    def _update_input(self, device="", config=""):
-        self._active_config = str(config)
-        self._active_device = str(device)
-
-        Config().set("input_device", str(self._active_device))
-
-        # update the checked state of the menu items
-        for c in self._menu_mappings.actions():
-            c.setEnabled(True)
-            if c.text() == self._active_config:
-                c.setChecked(True)
-        for c in self._menu_devices.actions():
-            c.setEnabled(True)
-            if c.text() == self._active_device:
-                c.setChecked(True)
-        # update label
-        if device == "" and config == "":
-            self._statusbar_label.setText("No input device selected")
-        elif config == "":
-            self._statusbar_label.setText("Using [{}] - "
-                                          "No input config selected".format
-                                          (self._active_device))
-        else:
-            self._statusbar_label.setText("Using [{}] with config [{}]".format
-                                          (self._active_device,
-                                           self._active_config))
-
     def _mux_selected(self, checked):
+        """Called when a new mux is selected. The menu item contains a
+        reference to the raw mux object as well as to the associated device
+        sub-nodes"""
         if not checked:
-            return
+            (mux, sub_nodes) = self.sender().data().toPyObject()
+            for s in sub_nodes:
+                s.setEnabled(False)
+        else:
+            (mux, sub_nodes) = self.sender().data().toPyObject()
+            for s in sub_nodes:
+                s.setEnabled(True)
+            self.joystickReader.set_mux(mux=mux)
 
-        selected_mux_name = str(self.sender().text())
-        self.joystickReader.set_mux(name=selected_mux_name)
+            # Go though the tree and select devices/mapping that was
+            # selected before it was disabled.
+            for role_node in sub_nodes:
+                for dev_node in role_node.children():
+                    if type(dev_node) is QAction and dev_node.isChecked():
+                        dev_node.toggled.emit(True)
 
-        logger.debug("Selected mux supports {} devices".format(self.joystickReader.get_mux_supported_dev_count()))
-        self._adjust_nbr_of_selected_devices()
+            self._update_input_device_footer()
 
-    def _get_saved_device_mapping(self, device_name):
-        """Return the saved mapping for a given device"""
-        config = None
-        device_config_mapping = Config().get("device_config_mapping")
-        if device_name in device_config_mapping.keys():
-            config = device_config_mapping[device_name]
+    def _get_dev_status(self, device):
+        msg = "{}".format(device.name)
+        if device.supports_mapping:
+            map_name = "N/A"
+            if device.input_map:
+                map_name = device.input_map_name
+            msg += " ({})".format(map_name)
+        return msg
 
-        logging.debug("For [{}] we recommend [{}]".format(device_name, config))
-        return config
-
-
-    def _update_input_device_footer(self, device_name=None, mapping_name=None):
+    def _update_input_device_footer(self):
         """Update the footer in the bottom of the UI with status for the
         input device and its mapping"""
-        if not device_name and not mapping_name:
-            self._statusbar_label.setText("No input device selected")
-        elif self._mapping_support and not mapping_name:
-            self._statusbar_label.setText("Using [{}] - "
-                                          "No input config selected".format(
-                                            device_name))
-        elif not self._mapping_support:
-            self._statusbar_label.setText("Using [{}]".format(device_name))
-        else:
-            self._statusbar_label.setText("Using [{}] with config [{}]".format(
-                                            device_name, mapping_name))
 
-    def _adjust_nbr_of_selected_devices(self):
-        nbr_of_selected = len(self._input_dev_stack)
-        nbr_of_supported = self.joystickReader.get_mux_supported_dev_count()
-        while len(self._input_dev_stack) > nbr_of_supported:
-            to_close = self._input_dev_stack.pop(0)
-            # Close and de-select it in the UI
-            self.joystickReader.stop_input(to_close)
-            for c in self._menu_devices.actions():
-                if c.text() == to_close:
-                        c.setChecked(False)
+        msg = ""
+
+        if len(self.joystickReader.available_devices()) > 0:
+            mux = self.joystickReader._selected_mux
+            msg = "Using {} mux with ".format(mux.name)
+            for key in mux._devs.keys()[:-1]:
+                if mux._devs[key]:
+                    msg += "{}, ".format(self._get_dev_status(mux._devs[key]))
+                else:
+                    msg += "N/A, "
+            # Last item
+            key = mux._devs.keys()[-1]
+            if mux._devs[key]:
+                msg += "{}".format(self._get_dev_status(mux._devs[key]))
+            else:
+                msg += "N/A"
+        else:
+            msg = "No input device found"
+        self._statusbar_label.setText(msg)
 
     def _inputdevice_selected(self, checked):
-        """Called when a new input device has been selected from the menu"""
+        """Called when a new input device has been selected from the menu. The
+        data in the menu object is the associated map menu (directly under the
+        item in the menu) and the raw device"""
+        (map_menu, device) = self.sender().data().toPyObject()
         if not checked:
-            return
+            if map_menu:
+                map_menu.setEnabled(False)
+            # Do not close the device, since we don't know exactly
+            # how many devices the mux can have open. When selecting a
+            # new mux the old one will take care of this.
+        else:
+            if map_menu:
+                map_menu.setEnabled(True)
 
-        self._input_dev_stack.append(self.sender().text())
+            role_in_mux = str(self.sender().parent().title()).strip()
+            logger.info("Role of {} is {}".format(device.name,
+                                                  role_in_mux))
 
-        selected_device_name = str(self.sender().text())
-        self._active_device = selected_device_name
+            Config().set("input_device", str(device.name))
 
-        # Save the device as "last used device"
-        Config().set("input_device", str(selected_device_name))
-
-        # Read preferred config used for this controller from config,
-        # if found then select this config in the menu
-
-        self._mapping_support = self.joystickReader.start_input(selected_device_name)
-        self._adjust_nbr_of_selected_devices()
-
-        if self.joystickReader.get_mux_supported_dev_count() == 1:
-            preferred_config = self.joystickReader.get_saved_device_mapping(selected_device_name)
-            if preferred_config:
-                for c in self._menu_mappings.actions():
-                    if c.text() == preferred_config:
-                        c.setChecked(True)
+            self._mapping_support = self.joystickReader.start_input(device.name,
+                                                                    role_in_mux)
+        self._update_input_device_footer()
 
     def _inputconfig_selected(self, checked):
-        """Called when a new configuration has been selected from the menu"""
+        """Called when a new configuration has been selected from the menu. The
+        data in the menu object is a referance to the device QAction in parent
+        menu. This contains a referance to the raw device."""
         if not checked:
             return
+
         selected_mapping = str(self.sender().text())
-        self.joystickReader.set_input_map(self._active_device, selected_mapping)
-        self._update_input_device_footer(self._active_device, selected_mapping)
+        device = self.sender().data().toPyObject().data().toPyObject()[1]
+        self.joystickReader.set_input_map(device.name, selected_mapping)
+        self._update_input_device_footer()
 
     def device_discovery(self, devs):
-        group = QActionGroup(self._menu_devices, exclusive=False)
+        """Called when new devices have been added"""
+        for menu in self._all_device_menus:
+            dev_group = QActionGroup(menu, exclusive=True)
+            for d in devs:
+                dev_node = QAction(d.name, menu, checkable=True,
+                                   enabled=True)
+                menu.addAction(dev_node)
+                dev_group.addAction(dev_node)
+                dev_node.toggled.connect(self._inputdevice_selected)
 
+                map_node = None
+                if d.supports_mapping:
+                    map_node = QMenu("\tInput map", menu, enabled=False)
+                    map_group = QActionGroup(menu, exclusive=True)
+                    # Connect device node to map node for easy
+                    # enabling/disabling when selection changes and device
+                    # to easily enable it
+                    dev_node.setData((map_node, d))
+                    for c in ConfigManager().get_list_of_configs():
+                        node = QAction(c, map_node, checkable=True,
+                                       enabled=True)
+                        node.toggled.connect(self._inputconfig_selected)
+                        map_node.addAction(node)
+                        # Connect all the map nodes back to the device
+                        # action node where we can access the raw device
+                        node.setData(dev_node)
+                        map_group.addAction(node)
+                        # If this device hasn't been found before, then
+                        # select the default mapping for it.
+                        if d not in self._available_devices:
+                            last_map = Config().get("device_config_mapping")
+                            if last_map.has_key(d.name) and last_map[d.name] == c:
+                                node.setChecked(True)
+                    menu.addMenu(map_node)
+                dev_node.setData((map_node, d))
+
+        # Update the list of what devices we found
+        # to avoid selecting default mapping for all devices when
+        # a new one is inserted
+        self._available_devices = ()
         for d in devs:
-            node = QAction(d.name, self._menu_devices, checkable=True)
-            node.toggled.connect(self._inputdevice_selected)
-            group.addAction(node)
-            self._menu_devices.addAction(node)
-            if d.name == Config().get("input_device"):
-                self._active_device = d.name
-        if len(self._active_device) == 0:
-            self._active_device = str(self._menu_devices.actions()[0].text())
+            self._available_devices += (d, )
 
-        device_config_mapping = Config().get("device_config_mapping")
-        if device_config_mapping:
-            if self._active_device in device_config_mapping.keys():
-                self._current_input_config = device_config_mapping[
-                    self._active_device]
-            else:
-                self._current_input_config = self._menu_mappings.actions()[0]\
-                    .text()
+        # Only enable MUX nodes if we have enough devies to cover
+        # the roles
+        for mux_node in self._all_mux_nodes:
+            (mux, sub_nodes) = mux_node.data().toPyObject()
+            if len(mux.supported_roles()) <= len(self._available_devices):
+                mux_node.setEnabled(True)
+
+        # TODO: Currently only supports selecting default mux
+        if self._all_mux_nodes[0].isEnabled():
+            self._all_mux_nodes[0].setChecked(True)
+
+        # If the previous length of the available devies was 0, then select
+        # the default on. If that's not available then select the first
+        # on in the list.
+        # TODO: This will only work for the "Normal" mux so this will be
+        #       selected by default
+        if Config().get("input_device") in [d.name for d in devs]:
+            for dev_menu in self._all_device_menus[0].actions():
+                if dev_menu.text() == Config().get("input_device"):
+                    dev_menu.setChecked(True)
         else:
-            self._current_input_config = self._menu_mappings.actions()[0].text()
+            # Select the first device in the first mux (will always be "Normal"
+            # mux)
+            self._all_device_menus[0].actions()[0].setChecked(True)
+            logger.info("Select first device")
 
-        # Now we know what device to use and what mapping, trigger the events
-        # to change the menus and start the input
-        for c in self._menu_devices.actions():
-            if c.text() == self._active_device:
-                c.setChecked(True)
-
-        for c in self._menu_mappings.actions():
-            c.setEnabled(True)
-            if c.text() == self._current_input_config:
-                c.setChecked(True)
+        self._update_input_device_footer()
 
     def _quick_connect(self):
         try:

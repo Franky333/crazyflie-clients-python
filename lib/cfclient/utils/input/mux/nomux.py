@@ -26,54 +26,27 @@
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
 #  02110-1301, USA.
 """
-
+This mux will only use one device and not mix it with any other input.
 """
 
 __author__ = 'Bitcraze AB'
 __all__ = ['NoMux']
 
-import os
-import glob
 from . import InputMux
 import logging
 logger = logging.getLogger(__name__)
 
 
-
 class NoMux(InputMux):
     def __init__(self, *args):
         super(NoMux, self).__init__(*args)
-        self.name = "None"
-
-    def add_device(self, dev, parameters):
-        logger.info("Adding device {} to MUX {}".format(dev.name, self.name))
-        self._devs = [dev] # We only allow one device for this Mux
+        self.name = "Normal"
+        self._devs = {"Device": None}
 
     def read(self):
-        data = self._devs[0].read()
-        roll = data["roll"]
-        pitch = data["pitch"]
-        thrust = data["thrust"]
-        yaw = data["yaw"]
+        if self._devs["Device"]:
+            data = self._devs["Device"].read()
 
-        if self._devs[0].limit_rp:
-            [roll, pitch] = self._scale_rp(roll, pitch)
-            [roll, pitch] = self._trim_rp(roll, pitch)
-
-        if self._devs[0].limit_thrust:
-            thrust = self._limit_thrust(thrust,
-                                        data["althold"],
-                                        data["estop"])
-        if self._devs[0].limit_yaw:
-            yaw = self._scale_and_deadband_yaw(yaw)
-
-
-        self._update_alt_hold(data["althold"])
-        self._update_em_stop(data["estop"])
-        self._update_alt1(data["alt1"])
-        self._update_alt2(data["alt2"])
-
-        return [roll, pitch, yaw, thrust]
-
-
-
+            return data
+        else:
+            return None

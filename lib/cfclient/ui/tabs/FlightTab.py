@@ -168,6 +168,10 @@ class FlightTab(Tab, flight_tab_class):
                     self.ratePidRadioButton.setChecked(eval(checked))))
 
         self.helper.cf.param.add_update_callback(
+                    group="cpu", name="flash",
+                    cb=self._set_enable_client_xmode)
+
+        self.helper.cf.param.add_update_callback(
                     group="ring", name="headlightEnable",
                     cb=(lambda name, checked:
                     self._led_ring_headlight.setChecked(eval(checked))))
@@ -209,6 +213,13 @@ class FlightTab(Tab, flight_tab_class):
         self.helper.inputDeviceReader.limiting_updated.add_callback(
             self._limiting_updated.emit)
         self._limiting_updated.connect(self._set_limiting_enabled)
+
+    def _set_enable_client_xmode(self, name, value):
+        if eval(value) <= 128:
+            self.clientXModeCheckbox.setEnabled(True)
+        else:
+            self.clientXModeCheckbox.setEnabled(False)
+            self.clientXModeCheckbox.setChecked(False)
 
     def _set_limiting_enabled(self, rp_limiting_enabled,
                                     yaw_limiting_enabled,
@@ -373,6 +384,7 @@ class FlightTab(Tab, flight_tab_class):
         self.targetASL.setText("Not Set")
         self.targetASL.setEnabled(False)
         self.actualASL.setEnabled(False)
+        self.clientXModeCheckbox.setEnabled(False)
         self.logBaro = None
         self.logAltHold = None
         self._led_ring_effect.setEnabled(False)
@@ -380,40 +392,39 @@ class FlightTab(Tab, flight_tab_class):
 
 
     def minMaxThrustChanged(self):
-        self.helper.inputDeviceReader.set_thrust_limits(
-                            self.minThrust.value(), self.maxThrust.value())
+        self.helper.inputDeviceReader.min_thrust = self.minThrust.value()
+        self.helper.inputDeviceReader.max_thrust = self.maxThrust.value()
         if (self.isInCrazyFlightmode == True):
             Config().set("min_thrust", self.minThrust.value())
             Config().set("max_thrust", self.maxThrust.value())
 
     def thrustLoweringSlewRateLimitChanged(self):
-        self.helper.inputDeviceReader.set_thrust_slew_limiting(
-                            self.thrustLoweringSlewRateLimit.value(),
-                            self.slewEnableLimit.value())
+        self.helper.inputDeviceReader.thrust_slew_rate = self.thrustLoweringSlewRateLimit.value()
+        self.helper.inputDeviceReader.thrust_slew_limit = self.slewEnableLimit.value()
         if (self.isInCrazyFlightmode == True):
             Config().set("slew_limit", self.slewEnableLimit.value())
             Config().set("slew_rate", self.thrustLoweringSlewRateLimit.value())
 
     def maxYawRateChanged(self):
         logger.debug("MaxYawrate changed to %d", self.maxYawRate.value())
-        self.helper.inputDeviceReader.set_yaw_limit(self.maxYawRate.value())
+        self.helper.inputDeviceReader.max_yaw_rate = self.maxYawRate.value()
         if (self.isInCrazyFlightmode == True):
             Config().set("max_yaw", self.maxYawRate.value())
 
     def maxAngleChanged(self):
         logger.debug("MaxAngle changed to %d", self.maxAngle.value())
-        self.helper.inputDeviceReader.set_rp_limit(self.maxAngle.value())
+        self.helper.inputDeviceReader.max_rp_angle = self.maxAngle.value()
         if (self.isInCrazyFlightmode == True):
             Config().set("max_rp", self.maxAngle.value())
 
     def _trim_pitch_changed(self, value):
         logger.debug("Pitch trim updated to [%f]" % value)
-        self.helper.inputDeviceReader.set_trim_pitch(value)
+        self.helper.inputDeviceReader.trim_pitch = value
         Config().set("trim_pitch", value)
 
     def _trim_roll_changed(self, value):
         logger.debug("Roll trim updated to [%f]" % value)
-        self.helper.inputDeviceReader.set_trim_roll(value)
+        self.helper.inputDeviceReader.trim_roll = value
         Config().set("trim_roll", value)
 
     def calUpdateFromInput(self, rollCal, pitchCal):
@@ -514,7 +525,9 @@ class FlightTab(Tab, flight_tab_class):
                            7: "Solid color effect",
                            8: "Factory test",
                            9: "Battery status",
-                           10: "Boat lights"}
+                           10: "Boat lights",
+                           11: "Alert",
+                           12: "Gravity"}
 
         for i in range(nbr+1):
             name = "{}: ".format(i)

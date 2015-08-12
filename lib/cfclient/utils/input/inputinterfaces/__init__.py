@@ -37,7 +37,7 @@ __all__ = ['InputInterface']
 import os
 import glob
 import logging
-from cfclient.utils.inputreaderinterface import InputReaderInterface
+from ..inputreaderinterface import InputReaderInterface
 
 logger = logging.getLogger(__name__)
 
@@ -61,8 +61,6 @@ for interface in found_interfaces:
         logger.info("Successfully initialized [{}]".format(interface))
     except Exception as e:
         logger.info("Could not initialize [{}]: {}".format(interface, e))
-        import traceback
-        logger.info(traceback.format_exc())
 
 def devices():
     # Todo: Support rescanning and adding/removing devices
@@ -95,6 +93,9 @@ class InputInterface(InputReaderInterface):
         self._reader.close(self.id)
 
     def read(self, include_raw=False):
-        self.data = self._reader.read(self.id)
+        mydata = self._reader.read(self.id)
+        # Merge interface returned data into InputReader Data Item
+        for key in mydata.keys():
+            self.data.set(key, mydata[key])
 
         return self.data
