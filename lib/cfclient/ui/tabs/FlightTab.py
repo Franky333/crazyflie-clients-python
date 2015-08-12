@@ -110,7 +110,7 @@ class FlightTab(Tab, flight_tab_class):
                                      self._emergency_stop_updated_signal.emit)
         
         self.helper.inputDeviceReader.althold_updated.add_callback(
-                    lambda enabled: self.helper.cf.param.set_value("flightmode.posCtrl", enabled))
+                    lambda enabled: self.helper.cf.param.set_value("flightmode.althold", enabled))
 
         self._imu_data_signal.connect(self._imu_data_received)
         self._baro_data_signal.connect(self._baro_data_received)
@@ -509,7 +509,7 @@ class FlightTab(Tab, flight_tab_class):
             self.helper.cf.param.set_value("ring.effect", str(self._ring_effect))
 
     def alt2_updated(self, state):
-        self.helper.cf.param.set_value("ring.headlightEnable", str(state))
+        self.helper.cf.param.set_value("flightmode.posCtrl", str(state))
 
     def _ring_populate_dropdown(self):
         nbr = int(self.helper.cf.param.values["ring"]["neffect"])
