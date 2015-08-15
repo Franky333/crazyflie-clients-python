@@ -509,7 +509,7 @@ class FlightTab(Tab, flight_tab_class):
             self.helper.cf.param.set_value("ring.effect", str(self._ring_effect))
 
     def alt2_updated(self, state):
-        self.helper.cf.param.set_value("flightmode.posCtrl", str(state))
+        self.helper.cf.param.set_value("flightmode.manOvrd", str(state))
 
     def _ring_populate_dropdown(self):
         nbr = int(self.helper.cf.param.values["ring"]["neffect"])
