@@ -134,10 +134,18 @@ class PosCtrlTab(Tab, posctrl_tab_class):
 
         self._pushButton_posCtrlMode.clicked.connect(self._pushbutton_posctrlmode_clicked)
 
+        self._helper.cf.param.add_update_callback(group="flightmode", name="takeoff", cb=self._param_updated_signal.emit)
         self._helper.cf.param.add_update_callback(group="flightmode", name="posCtrl", cb=self._param_updated_signal.emit)
+        self._helper.cf.param.add_update_callback(group="flightmode", name="landing", cb=self._param_updated_signal.emit)
+        self._helper.cf.param.add_update_callback(group="flightmode", name="manOvrd", cb=self._param_updated_signal.emit)
         self._helper.cf.param.add_update_callback(group="posCtrl", name="mode", cb=self._param_updated_signal.emit)
 
         self.oldStatus = None
+
+        self.flightmode_takeoff_old = 0
+        self.flightmode_posCtrl_old = 0
+        self.flightmode_landing_old = 0
+        self.flightmode_manOvrd_old = 0
 
         self.beepQueue = Queue()
         self.worker = BeepThread(self.beepQueue)
@@ -188,6 +196,18 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         if pos_conf.valid:
             pos_conf.data_received_cb.add_callback(self._log_data_signal.emit)
             pos_conf.start()
+
+        # used to update parameters when changed by cf
+        flightmode_conf = LogConfig("Flightmode", 50)
+        flightmode_conf.add_variable("flightmode.takeoff")
+        flightmode_conf.add_variable("flightmode.posCtrl")
+        flightmode_conf.add_variable("flightmode.landing")
+        flightmode_conf.add_variable("flightmode.manOvrd")
+
+        self._helper.cf.log.add_config(flightmode_conf)
+        if flightmode_conf.valid:
+            flightmode_conf.data_received_cb.add_callback(self._log_data_signal.emit)
+            flightmode_conf.start()
 
     def _disconnected(self, link_uri):
         """Callback for when the Crazyflie has been disconnected"""
@@ -287,6 +307,20 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             self._label_value_yaw.setText("{0:.02f}".format(data["pos.yaw"]))
             self._label_value_x.setText("{0:.02f}".format(data["pos.x"]))
             self._label_value_y.setText("{0:.02f}".format(data["pos.y"]))
+
+        elif log_conf.name == "Flightmode": # used to update parameters when changed by cf
+            if data["flightmode.takeoff"] != self.flightmode_takeoff_old:
+                self._helper.cf.param.request_param_update("flightmode.takeoff")
+                self.flightmode_takeoff_old = data["flightmode.takeoff"]
+            if data["flightmode.posCtrl"] != self.flightmode_posCtrl_old:
+                self._helper.cf.param.request_param_update("flightmode.posCtrl")
+                self.flightmode_posCtrl_old = data["flightmode.posCtrl"]
+            if data["flightmode.landing"] != self.flightmode_landing_old:
+                self._helper.cf.param.request_param_update("flightmode.landing")
+                self.flightmode_landing_old = data["flightmode.landing"]
+            if data["flightmode.manOvrd"] != self.flightmode_manOvrd_old:
+                self._helper.cf.param.request_param_update("flightmode.manOvrd")
+                self.flightmode_manOvrd_old = data["flightmode.manOvrd"]
 
     def _logging_error(self, log_conf, msg):
         """Callback from the log layer when an error occurs"""
