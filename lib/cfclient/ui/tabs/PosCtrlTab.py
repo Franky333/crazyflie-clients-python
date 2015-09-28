@@ -39,7 +39,7 @@ import sys
 import math
 from pyaudio import PyAudio
 from threading import Thread
-from Queue import Queue
+from queue import Queue
 
 # wmc status
 WMC_STATUS_OK = 0
@@ -65,12 +65,12 @@ BEEP_RESTFRAMES = BEEP_NUMBEROFFRAMES % BEEP_BITRATE
 BEEP_IN_WAVEDATA = ''
 BEEP_OUT_WAVEDATA = ''
 
-for x in xrange(BEEP_NUMBEROFFRAMES):
+for x in range(BEEP_NUMBEROFFRAMES):
     BEEP_IN_WAVEDATA += chr(int(math.sin(x / ((BEEP_BITRATE / BEEP_IN_FREQUENCY) / (2*math.pi)))*127+128))
     BEEP_OUT_WAVEDATA += chr(int(math.sin(x / ((BEEP_BITRATE / BEEP_OUT_FREQUENCY) / (2*math.pi)))*127+128))
 
 #fill remainder of frameset with silence
-for x in xrange(BEEP_RESTFRAMES):
+for x in range(BEEP_RESTFRAMES):
     BEEP_IN_WAVEDATA += chr(128)
     BEEP_OUT_WAVEDATA += chr(128)
 
