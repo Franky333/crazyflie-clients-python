@@ -153,6 +153,8 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         self.flightmode_landing_old = 0
         self.flightmode_manOvrd_old = 0
 
+        self.flightmode_wasLanding = 0
+
         self.beepQueue = Queue()
         self.worker = BeepThread(self.beepQueue)
         self.worker.setDaemon(True)
@@ -175,6 +177,7 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             self._pushButton_takeoffLand.setText("Take Off")
             self._helper.cf.param.set_value("flightmode.landing", str(1))
             self._pushButton_takeoffLand.setEnabled(False)
+            self.flightmode_wasLanding = 1
 
     def _connected(self, link_uri):
         """Callback when the Crazyflie has been connected"""
@@ -286,15 +289,17 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             self._label_flightmode.setText("Flightmode: Landing")
             self._pushButton_takeoffLand.setText("Take Off")
             self._pushButton_takeoffLand.setEnabled(False)
+            self.flightmode_wasLanding = 1
         elif self.flightmode_posCtrl:
             self._label_flightmode.setText("Flightmode: posCtrl")
         elif self.flightmode_takeoff:
             self._label_flightmode.setText("Flightmode: Takeoff")
         else:
             self._label_flightmode.setText("Flightmode: none")
-            self._pushButton_takeoffLand.setText("Take Off")
-            self._pushButton_takeoffLand.setEnabled(True)
-
+            if self.flightmode_wasLanding:
+                self._pushButton_takeoffLand.setText("Take Off")
+                self._pushButton_takeoffLand.setEnabled(True)
+                self.flightmode_wasLanding = 0
 
 
     def _log_data_received(self, timestamp, data, log_conf):
