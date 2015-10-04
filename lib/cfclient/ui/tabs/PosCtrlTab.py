@@ -143,6 +143,11 @@ class PosCtrlTab(Tab, posctrl_tab_class):
 
         self.oldStatus = None
 
+        self.flightmode_manOvrd = 0
+        self.flightmode_landing = 0
+        self.flightmode_posCtrl = 0
+        self.flightmode_takeoff = 0
+
         self.flightmode_takeoff_old = 0
         self.flightmode_posCtrl_old = 0
         self.flightmode_landing_old = 0
@@ -249,12 +254,11 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             if eval(str(value)) == 1:
                 self._label_value_posCtrl.setText("Active")
                 self._label_value_posCtrl.setStyleSheet('color: green')
-                self._label_flightmode.setText("Flightmode: posCtrl")
+                self.flightmode_posCtrl = 1
             elif eval(str(value)) == 0:
                 self._label_value_posCtrl.setText("Inactive")
                 self._label_value_posCtrl.setStyleSheet('color: red')
-                if self._label_flightmode.text == "Flightmode: posCtrl":
-                    self._label_flightmode.setText("Flightmode: none")
+                self.flightmode_posCtrl = 0
 
             else:
                 self._label_value_posCtrl.setText("Unknown")
@@ -262,24 +266,33 @@ class PosCtrlTab(Tab, posctrl_tab_class):
 
         elif str(name) == "flightmode.takeoff":
             if eval(str(value)) == 1:
-                self._label_flightmode.setText("Flightmode: Takeoff")
+                self.flightmode_takeoff = 1
             elif eval(str(value)) == 0:
-                if self._label_flightmode.text == "Flightmode: Takeoff":
-                    self._label_flightmode.setText("Flightmode: none")
+                self.flightmode_takeoff = 0
 
         elif str(name) == "flightmode.landing":
             if eval(str(value)) == 1:
-                self._label_flightmode.setText("Flightmode: Landing")
+                self.flightmode_landing = 1
             elif eval(str(value)) == 0:
-                if self._label_flightmode.text == "Flightmode: Landing":
-                    self._label_flightmode.setText("Flightmode: none")
+                self.flightmode_landing = 0
 
         elif str(name) == "flightmode.manOvrd":
             if eval(str(value)) == 1:
-                self._label_flightmode.setText("Flightmode: Manual Override")
+                self.flightmode_manOvrd = 1
             elif eval(str(value)) == 0:
-                if self._label_flightmode.text == "Flightmode: Override":
-                    self._label_flightmode.setText("Flightmode: none")
+                self.flightmode_manOvrd = 0
+
+        if self.flightmode_manOvrd:
+            self._label_flightmode.setText("Flightmode: Manual Override")
+        elif self.flightmode_landing:
+            self._label_flightmode.setText("Flightmode: Landing")
+        elif self.flightmode_posCtrl:
+            self._label_flightmode.setText("Flightmode: posCtrl")
+        elif self.flightmode_takeoff:
+            self._label_flightmode.setText("Flightmode: Takeoff")
+        else:
+            self._label_flightmode.setText("Flightmode: none")
+
 
 
     def _log_data_received(self, timestamp, data, log_conf):
