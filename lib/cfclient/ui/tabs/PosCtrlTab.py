@@ -165,7 +165,7 @@ class PosCtrlTab(Tab, posctrl_tab_class):
     def _pushbutton_takeoffLand_clicked(self):
         if self._pushButton_takeoffLand.text() == "Take Off":
             self._pushButton_takeoffLand.setText("Land")
-            self._helper.cf.param.set_value("flightmode.takeoff", str(1)
+            self._helper.cf.param.set_value("flightmode.takeoff", str(1))
         else:
             self._pushButton_takeoffLand.setText("Take Off")
             self._helper.cf.param.set_value("flightmode.landing", str(1))
