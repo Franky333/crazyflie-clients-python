@@ -227,6 +227,9 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             flightmode_conf.data_received_cb.add_callback(self._log_data_signal.emit)
             flightmode_conf.start()
 
+        self._pushButton_takeoffLand.setText("Take Off")
+        self._pushButton_takeoffLand.setEnabled(True)
+
     def _disconnected(self, link_uri):
         """Callback for when the Crazyflie has been disconnected"""
         logger.debug("Crazyflie disconnected from {}".format(link_uri))
