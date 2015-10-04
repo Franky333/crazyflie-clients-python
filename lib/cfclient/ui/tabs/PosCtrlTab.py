@@ -174,6 +174,7 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         else:
             self._pushButton_takeoffLand.setText("Take Off")
             self._helper.cf.param.set_value("flightmode.landing", str(1))
+            self._pushButton_takeoffLand.setEnabled("False")
 
     def _connected(self, link_uri):
         """Callback when the Crazyflie has been connected"""
@@ -222,9 +223,6 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         if flightmode_conf.valid:
             flightmode_conf.data_received_cb.add_callback(self._log_data_signal.emit)
             flightmode_conf.start()
-
-        self._pushButton_takeoffLand.setText("Take Off")
-        self._pushButton_takeoffLand.setEnabled(True)
 
     def _disconnected(self, link_uri):
         """Callback for when the Crazyflie has been disconnected"""
@@ -292,6 +290,8 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             self._label_flightmode.setText("Flightmode: Takeoff")
         else:
             self._label_flightmode.setText("Flightmode: none")
+            self._pushButton_takeoffLand.setText("Take Off")
+            self._pushButton_takeoffLand.setEnabled("True")
 
 
 
