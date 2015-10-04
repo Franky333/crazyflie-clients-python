@@ -284,6 +284,8 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             self._label_flightmode.setText("Flightmode: Manual Override")
         elif self.flightmode_landing:
             self._label_flightmode.setText("Flightmode: Landing")
+            self._pushButton_takeoffLand.setText("Take Off")
+            self._pushButton_takeoffLand.setEnabled(False)
         elif self.flightmode_posCtrl:
             self._label_flightmode.setText("Flightmode: posCtrl")
         elif self.flightmode_takeoff:
