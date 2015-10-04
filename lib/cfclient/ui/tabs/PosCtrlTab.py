@@ -133,6 +133,7 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         self.displayWidget.setTPattern(0, 2, 1, 3)
 
         self._pushButton_posCtrlMode.clicked.connect(self._pushbutton_posctrlmode_clicked)
+        self._pushButton_takeoffLand.clicked.connect(self._pushbutton_takeoffLand_clicked)
 
         self._helper.cf.param.add_update_callback(group="flightmode", name="takeoff", cb=self._param_updated_signal.emit)
         self._helper.cf.param.add_update_callback(group="flightmode", name="posCtrl", cb=self._param_updated_signal.emit)
@@ -160,6 +161,14 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         else:
             self._label_mode.setText("posCtrl-Mode: Point")
             self._helper.cf.param.set_value("posCtrl.mode", str(POSCTRL_MODE_POINT))
+
+    def _pushbutton_takeoffLand_clicked(self):
+        if self._pushbutton_takeoffLand.text() == "Take Off":
+            self._pushbutton_takeoffLand.setText("Land")
+            self._helper.cf.param.set_value("flightmode.takeoff", 1)
+        else:
+            self._pushbutton_takeoffLand.setText("Take Off")
+            self._helper.cf.param.set_value("flightmode.landing", 1)
 
     def _connected(self, link_uri):
         """Callback when the Crazyflie has been connected"""
@@ -209,6 +218,9 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             flightmode_conf.data_received_cb.add_callback(self._log_data_signal.emit)
             flightmode_conf.start()
 
+        self._pushbutton_takeoffLand.setText("Take Off")
+        self._pushButton_takeoffLand.setEnabled(True)
+
     def _disconnected(self, link_uri):
         """Callback for when the Crazyflie has been disconnected"""
         logger.debug("Crazyflie disconnected from {}".format(link_uri))
@@ -216,23 +228,13 @@ class PosCtrlTab(Tab, posctrl_tab_class):
         self._label_value_posCtrl.setText("Not Connected")
         self._label_value_status.setText("Not Connected")
         self._pushButton_posCtrlMode.setEnabled(False)
+        self._pushButton_takeoffLand.setEnabled(False)
 
     def _param_updated(self, name, value):
         """Callback when the registered parameter get's updated"""
         logger.debug("Updated {0} to {1}".format(name, value))
 
-        if str(name) == "flightmode.posCtrl":
-            if eval(str(value)) == 1:
-                self._label_value_posCtrl.setText("Active")
-                self._label_value_posCtrl.setStyleSheet('color: green')
-            elif eval(str(value)) == 0:
-                self._label_value_posCtrl.setText("Inactive")
-                self._label_value_posCtrl.setStyleSheet('color: red')
-            else:
-                self._label_value_posCtrl.setText("Unknown")
-                self._label_value_posCtrl.setStyleSheet('color: red')
-
-        elif str(name) == "posCtrl.mode":
+        if str(name) == "posCtrl.mode":
             if not self._pushButton_posCtrlMode.isEnabled():
                 self._pushButton_posCtrlMode.setEnabled(True)
 
@@ -242,6 +244,43 @@ class PosCtrlTab(Tab, posctrl_tab_class):
                 self._label_mode.setText("posCtrl-Mode: Point")
             else:
                 self._label_mode.setText("posCtrl-Mode: unknown")
+
+        elif str(name) == "flightmode.posCtrl":
+            if eval(str(value)) == 1:
+                self._label_value_posCtrl.setText("Active")
+                self._label_value_posCtrl.setStyleSheet('color: green')
+                self._label_flightmode.setText("Flightmode: posCtrl")
+            elif eval(str(value)) == 0:
+                self._label_value_posCtrl.setText("Inactive")
+                self._label_value_posCtrl.setStyleSheet('color: red')
+                if self._label_flightmode.text == "Flightmode: posCtrl":
+                    self._label_flightmode.setText("Flightmode: none")
+
+            else:
+                self._label_value_posCtrl.setText("Unknown")
+                self._label_value_posCtrl.setStyleSheet('color: red')
+
+        elif str(name) == "flightmode.takeoff":
+            if eval(str(value)) == 1:
+                self._label_flightmode.setText("Flightmode: Takeoff")
+            elif eval(str(value)) == 0:
+                if self._label_flightmode.text == "Flightmode: Takeoff":
+                    self._label_flightmode.setText("Flightmode: none")
+
+        elif str(name) == "flightmode.landing":
+            if eval(str(value)) == 1:
+                self._label_flightmode.setText("Flightmode: Landing")
+            elif eval(str(value)) == 0:
+                if self._label_flightmode.text == "Flightmode: Landing":
+                    self._label_flightmode.setText("Flightmode: none")
+
+        elif str(name) == "flightmode.manOvrd":
+            if eval(str(value)) == 1:
+                self._label_flightmode.setText("Flightmode: Manual Override")
+            elif eval(str(value)) == 0:
+                if self._label_flightmode.text == "Flightmode: Override":
+                    self._label_flightmode.setText("Flightmode: none")
+
 
     def _log_data_received(self, timestamp, data, log_conf):
         """Callback when the log layer receives new data"""
