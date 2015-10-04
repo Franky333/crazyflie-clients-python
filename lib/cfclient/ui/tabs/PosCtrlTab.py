@@ -163,11 +163,11 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             self._helper.cf.param.set_value("posCtrl.mode", str(POSCTRL_MODE_POINT))
 
     def _pushbutton_takeoffLand_clicked(self):
-        if self._pushbutton_takeoffLand.text() == "Take Off":
-            self._pushbutton_takeoffLand.setText("Land")
+        if self._pushButton_takeoffLand.text() == "Take Off":
+            self._pushButton_takeoffLand.setText("Land")
             self._helper.cf.param.set_value("flightmode.takeoff", 1)
         else:
-            self._pushbutton_takeoffLand.setText("Take Off")
+            self._pushButton_takeoffLand.setText("Take Off")
             self._helper.cf.param.set_value("flightmode.landing", 1)
 
     def _connected(self, link_uri):
@@ -218,7 +218,7 @@ class PosCtrlTab(Tab, posctrl_tab_class):
             flightmode_conf.data_received_cb.add_callback(self._log_data_signal.emit)
             flightmode_conf.start()
 
-        self._pushbutton_takeoffLand.setText("Take Off")
+        self._pushButton_takeoffLand.setText("Take Off")
         self._pushButton_takeoffLand.setEnabled(True)
 
     def _disconnected(self, link_uri):
