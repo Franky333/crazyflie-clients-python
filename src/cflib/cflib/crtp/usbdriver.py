@@ -39,15 +39,15 @@ from .crtpstack import CRTPPacket
 from .exceptions import WrongUriType
 import threading
 import sys
-if sys.version_info < (3,):
-    import Queue as queue
-else:
-    import queue
 import re
 import time
 
 from cflib.drivers.cfusb import CfUsb
 from usb import USBError
+if sys.version_info < (3,):
+    import Queue as queue
+else:
+    import queue
 
 __author__ = 'Bitcraze AB'
 __all__ = ['UsbDriver']
@@ -99,8 +99,6 @@ class UsbDriver(CRTPDriver):
             self.cfusb = CfUsb(devid=int(uri_data.group(1)))
             if self.cfusb.dev:
                 self.cfusb.set_crtp_to_usb(True)
-                # Wait for the blocking queues in the firmware to time out
-                time.sleep(1)
             else:
                 self.cfusb = None
                 raise Exception("Could not open {}".format(self.uri))
