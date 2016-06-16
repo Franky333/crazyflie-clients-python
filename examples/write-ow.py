@@ -35,10 +35,9 @@ import logging
 import time
 from threading import Timer
 
-sys.path.append("../lib")
+sys.path.append("../src/cflib")
 import cflib.crtp  # noqa
-from cfclient.utils.logconfigreader import LogConfig  # noqa
-from cflib.crazyflie.mem import MemoryElement, OWElement
+from cflib.crazyflie.mem import MemoryElement, OWElement  # noqa
 from cflib.crazyflie import Crazyflie  # noqa
 
 # Only output errors from the logging framework

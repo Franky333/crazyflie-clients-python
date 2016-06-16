@@ -18,7 +18,7 @@ To install the Crazyflie PC client in Linux, you can run the setup script with:
 This will install the Crazyflie PC client systemwide, create a udev entry for
 the Crazyradio and setup the permissions so that the current user can use the
 radio without root permissions after restarting the computer. For further
-instructions on how to run from source see bellow.
+instructions on how to run from source and [install dependencies](https://github.com/SteveClement/crazyflie-clients-python#dependencies) see bellow.
 
 ## Windows
 
@@ -104,13 +104,27 @@ they might or might not affected of this.
 
 1. Install dependencies. Note that there are quite a few, so this could take a while:
     ```
-    sudo port install libusb python34 py34-pyusb py34-SDL2 py34-pyqt4
+    sudo port install libusb python34 py34-SDL2 py34-pyqt4 py34-pip
+    ```
+    To make the MacPorts ```python``` and ```pip``` the default commands:
+    ```
+    sudo port select --set python python34
+    sudo port select --set python3 python34
+    sudo port select --set pip pip34
+    ```
+    To install ```pyusb``` from ```pip```, use:
+    ```
+    sudo pip install pyusb
     ```
     To enable the plotter tab install pyqtgraph, this takes a lot of time:
     ```
     sudo port install py34-pyqtgraph
     ```
-    You can now run the client from source with
+    You can now run the client from the source folder with
+    ```
+    python bin/cfclient
+    ```
+    Or, if you did not run the ```port select``` command to set the MacPorts ```python``` as the default, use:
     ```
     /opt/local/bin/python3.4 bin/cfclient
     ```
@@ -122,12 +136,6 @@ they might or might not affected of this.
     ```DYLD_LIBRARY_PATH``` to ```/opt/local/lib``` in ```~/.profile```:
     ```
     export DYLD_LIBRARY_PATH=/opt/local/lib
-    ```
-
-1. Now you're good to go! Run the client from the source folder with the
-    following command:
-    ```
-    python2.7 bin/cfclient
     ```
 
 ## Linux
@@ -158,8 +166,10 @@ Example commands to install these dependencies:
 
 * Ubuntu (15.04):
 
-    ```sudo apt-get install python3 python3-pip python3-pyqt4 python3-zmq python3-pyqtgraph
-    sudo pip3 install pyusb==1.0.0b2```
+    ```
+    sudo apt-get install python3 python3-pip python3-pyqt4 python3-zmq python3-pyqtgraph
+    sudo pip3 install pyusb==1.0.0b2
+    ```
 
 * OpenSUSE (tested for 11.3):
 
@@ -188,6 +198,11 @@ Create a file named ```/etc/udev/rules.d/99-crazyradio.rules``` and add the
 following:
 ```
 SUBSYSTEM=="usb", ATTRS{idVendor}=="1915", ATTRS{idProduct}=="7777", MODE="0664", GROUP="plugdev"
+```
+
+To connect Crazyflie 2.0 via usb, create a file name ```/etc/udev/rules.d/99-crazyflie.rules``` and add the following:
+```
+SUBSYSTEM=="usb", ATTRS{idVendor}=="0483", ATTRS{idProduct}=="5740", MODE="0664", GROUP="plugdev"
 ```
 
 Restart the computer and you are now able to access the USB radio dongle
