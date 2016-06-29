@@ -43,7 +43,8 @@ __all__ = []
 logger = logging.getLogger(__name__)
 
 
-DRIVERS = [RadioDriver, SerialDriver, UdpDriver, DebugDriver]#, UsbDriver] #workarround to stop segfaults. usb connection to cfn disabled by this workaround.
+DRIVERS = [RadioDriver, SerialDriver, UdpDriver, DebugDriver, UsbDriver]
+
 INSTANCES = []
 
 
