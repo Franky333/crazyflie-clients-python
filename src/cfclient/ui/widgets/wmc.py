@@ -1,6 +1,6 @@
 __author__ = 'Markus Klein'
 
-from PyQt4 import QtGui, QtCore
+from PyQt5 import QtGui, QtCore
 
 
 class WMCBlobDisplay(QtGui.QWidget):

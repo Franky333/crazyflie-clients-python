@@ -35,6 +35,7 @@ __all__ = ['PosCtrlTab']
 
 import logging
 import sys
+import cfclient
 
 import math
 from pyaudio import PyAudio
@@ -76,9 +77,9 @@ for x in range(BEEP_RESTFRAMES):
 
 logger = logging.getLogger(__name__)
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import pyqtSlot, pyqtSignal, QThread, Qt
-from PyQt4.QtGui import QMessageBox
+from PyQt5 import QtCore, QtGui, uic
+from PyQt5.QtCore import pyqtSlot, pyqtSignal, QThread, Qt
+from PyQt5.QtGui import QMessageBox
 
 from cfclient.ui.tab import Tab
 
@@ -87,8 +88,8 @@ from cflib.crazyflie.param import Param
 
 from cfclient.ui.widgets.wmc import WMCBlobDisplay
 
-posctrl_tab_class = uic.loadUiType(sys.path[0] +
-                                   "/cfclient/ui/tabs/posCtrlTab.ui")[0]
+posctrl_tab_class = uic.loadUiType(cfclient.module_path +
+                                   "/ui/tabs/posCtrlTab.ui")[0]
 
 
 class PosCtrlTab(Tab, posctrl_tab_class):

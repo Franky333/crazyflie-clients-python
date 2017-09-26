@@ -38,6 +38,7 @@ from .LogBlockTab import LogBlockTab
 from .LogTab import LogTab
 from .ParamTab import ParamTab
 from .PlotTab import PlotTab
+from .PosCtrlTab import PosCtrlTab
 from .locopositioning_tab import LocoPositioningTab
 
 __author__ = 'Bitcraze AB'
@@ -54,4 +55,5 @@ available = [
     ParamTab,
     PlotTab,
     LocoPositioningTab,
+    PosCtrlTab,
 ]
