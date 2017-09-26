@@ -20,34 +20,33 @@
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-
 #  You should have received a copy of the GNU General Public License along with
 #  this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """
 Toolbox used to interact with the DebugDriver using a designated port. It's
 intended to be used for debugging.
 """
-
-import time
-import sys
-
 import struct
-from cflib.crtp.crtpstack import CRTPPacket, CRTPPort
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import Qt, pyqtSlot, pyqtSignal, QThread, SIGNAL
+from cflib.crtp.crtpstack import CRTPPacket
+from cflib.crtp.crtpstack import CRTPPort
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import Qt
+
+import cfclient
 
 __author__ = 'Bitcraze AB'
 __all__ = ['DebugDriverToolbox']
 
 debugdriver_tab_class = uic.loadUiType(
-    sys.path[0] +
-    "/cfclient/ui/toolboxes/debugDriverToolbox.ui")[0]
+    cfclient.module_path +
+    "/ui/toolboxes/debugDriverToolbox.ui")[0]
 
 
-class DebugDriverToolbox(QtGui.QWidget, debugdriver_tab_class):
+class DebugDriverToolbox(QtWidgets.QWidget, debugdriver_tab_class):
     """Used to interact with the DebugDriver toolbox"""
     connectionDoneSignal = pyqtSignal(str)
     disconnectedSignal = pyqtSignal(str)

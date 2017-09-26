@@ -32,23 +32,18 @@ and manipulating the plot.
 For more advanced plotting save the data and use an external application.
 """
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import Qt, pyqtSlot, pyqtSignal, QThread, QLine, QPoint, \
-    QPointF, QSize, QRectF
+from PyQt5 import QtWidgets, uic
 
 from time import time
-import math
 
 import logging
 
-import sys
+from PyQt5.QtWidgets import QButtonGroup
+from PyQt5.QtCore import *  # noqa
+from PyQt5.QtWidgets import *  # noqa
+from PyQt5.Qt import *  # noqa
 
-from PyQt4 import Qt, QtCore, QtGui, uic
-from PyQt4.QtGui import QButtonGroup
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.Qt import *
-from time import time
+import cfclient
 
 __author__ = 'Bitcraze AB'
 __all__ = ['PlotWidget']
@@ -56,15 +51,14 @@ __all__ = ['PlotWidget']
 logger = logging.getLogger(__name__)
 
 (plot_widget_class, connect_widget_base_class) = (
-    uic.loadUiType(sys.path[0] + '/cfclient/ui/widgets/plotter.ui'))
+    uic.loadUiType(cfclient.module_path + '/ui/widgets/plotter.ui'))
 
 # Try the imports for PyQtGraph to see if it is installed
 try:
     import pyqtgraph as pg
     from pyqtgraph import ViewBox
-    from pyqtgraph.Qt import QtCore, QtGui
-    import pyqtgraph.console
-    import numpy as np
+    import pyqtgraph.console  # noqa
+    import numpy as np  # noqa
 
     _pyqtgraph_found = True
 except Exception:
@@ -78,9 +72,9 @@ except Exception:
 # Windows. But for Linux this is not required and might not be installed with
 # the PyQtGraph package.
 try:
-    from scipy.stats import futil
-    from scipy.sparse.csgraph import _validation
-    from scipy.special import _ufuncs_cxx
+    from scipy.stats import futil  # noqa
+    from scipy.sparse.csgraph import _validation  # noqa
+    from scipy.special import _ufuncs_cxx  # noqa
 except Exception:
     pass
 
@@ -114,7 +108,7 @@ class PlotItemWrapper:
         return [self.ts[start], self.ts[limit - 1]]
 
 
-class PlotWidget(QtGui.QWidget, plot_widget_class):
+class PlotWidget(QtWidgets.QWidget, plot_widget_class):
     """Wrapper widget for PyQtGraph adding some extra buttons"""
 
     def __init__(self, parent=None, fps=100, title="", *args):
@@ -135,9 +129,9 @@ class PlotWidget(QtGui.QWidget, plot_widget_class):
         self._items = {}
         self._last_item = 0
 
-        self.setSizePolicy(QtGui.QSizePolicy(
-            QtGui.QSizePolicy.MinimumExpanding,
-            QtGui.QSizePolicy.MinimumExpanding))
+        self.setSizePolicy(QtWidgets.QSizePolicy(
+            QtWidgets.QSizePolicy.MinimumExpanding,
+            QtWidgets.QSizePolicy.MinimumExpanding))
 
         self.setMinimumSize(self.minimumSizeHint())
         self.parent = parent
@@ -305,9 +299,19 @@ class PlotWidget(QtGui.QWidget, plot_widget_class):
         """Reset the plot by removing all the datasets"""
         for item in self._items:
             self._plot_widget.removeItem(self._items[item])
-        self._plot_widget.plotItem.legend.items = []
+
+        self._clear_legend()
+
         self._items = {}
         self._last_item = 0
         self._last_ts = None
         self._dtime = None
         self._plot_widget.clear()
+
+    def _clear_legend(self):
+        legend = self._plot_widget.plotItem.legend
+
+        while legend.layout.count() > 0:
+            item = legend.items[0]
+            name = item[1].text
+            legend.removeItem(name)

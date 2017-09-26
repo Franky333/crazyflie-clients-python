@@ -20,7 +20,6 @@
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA
@@ -29,7 +28,6 @@
 The mux is used to open one or more devices and mix the inputs from all
 of them into one "input" for the Crazyflie and UI.
 """
-
 import logging
 
 __author__ = 'Bitcraze AB'
@@ -39,6 +37,7 @@ logger = logging.getLogger(__name__)
 
 
 class InputMux(object):
+
     def __init__(self, input_layer):
         self._devs = {"Device": None}
         self.name = "N/A"
@@ -72,6 +71,13 @@ class InputMux(object):
     def pause(self):
         for d in [key for key in list(self._devs.keys()) if self._devs[key]]:
             self._devs[d].close()
+
+    def devices(self):
+        devs = ()
+        for d in self._devs:
+            if self._devs[d]:
+                devs += (self._devs[d], )
+        return devs
 
     def resume(self):
         for d in [key for key in list(self._devs.keys()) if self._devs[key]]:

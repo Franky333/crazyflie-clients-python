@@ -20,38 +20,37 @@
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-
 #  You should have received a copy of the GNU General Public License along with
 #  this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """
 The about dialog.
 """
 
 import sys
 
-from PyQt4 import Qt, QtCore, QtGui, uic
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.Qt import *
-
 import cfclient
-
 import cflib.crtp
+from PyQt5.QtCore import QT_VERSION_STR
+from PyQt5.QtCore import PYQT_VERSION_STR
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+from PyQt5.QtCore import pyqtSignal
 
 __author__ = 'Bitcraze AB'
 __all__ = ['AboutDialog']
 
 (about_widget_class,
- about_widget_base_class) = (uic.loadUiType(sys.path[0] +
-                                            '/cfclient/ui/dialogs/about.ui'))
+ about_widget_base_class) = (uic.loadUiType(cfclient.module_path +
+                                            '/ui/dialogs/about.ui'))
 
 DEBUG_INFO_FORMAT = """
 <b>Cfclient</b><br>
 Cfclient version: {version}<br>
 System: {system}<br>
 Python: {pmajor}.{pminor}.{pmicro}<br>
+Qt: {qt_version}<br>
+PyQt: {pyqt_version}<br>
 <br>
 <b>Interface status</b><br>
 {interface_status}
@@ -93,7 +92,7 @@ CREDITS_FORMAT = """
 """
 
 
-class AboutDialog(QtGui.QWidget, about_widget_class):
+class AboutDialog(QtWidgets.QWidget, about_widget_class):
     _disconnected_signal = pyqtSignal(str)
 
     """Crazyflie client About box for debugging and information"""
@@ -128,7 +127,7 @@ class AboutDialog(QtGui.QWidget, about_widget_class):
         # Open the Credits file and show it in the UI
         credits = ""
         try:
-            with open("CREDITS.txt", 'r') as f:
+            with open("CREDITS.txt", encoding='utf-8', mode='r') as f:
                 for line in f:
                     credits += "{}<br>".format(line)
         except IOError:
@@ -175,6 +174,8 @@ class AboutDialog(QtGui.QWidget, about_widget_class):
                 pmajor=sys.version_info.major,
                 pminor=sys.version_info.minor,
                 pmicro=sys.version_info.micro,
+                qt_version=QT_VERSION_STR,
+                pyqt_version=PYQT_VERSION_STR,
                 interface_status=self._interface_text,
                 input_devices=self._device_text,
                 input_readers=self._input_readers_text,

@@ -7,7 +7,7 @@
 #  +------+    / /_/ / / /_/ /__/ /  / /_/ / / /_/  __/
 #   ||  ||    /_____/_/\__/\___/_/   \__,_/ /___/\___/
 #
-#  Copyright (C) 2011-2013 Bitcraze AB
+#  Copyright (C) 2011-2017 Bitcraze AB
 #
 #  Crazyflie Nano Quadcopter Client
 #
@@ -20,29 +20,25 @@
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-
 #  You should have received a copy of the GNU General Public License along with
 #  this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """
 Dialogue used to select and configure an inputdevice. This includes mapping
 buttons and axis to match controls for the Crazyflie.
 """
-
-import sys
-import json
 import logging
 
+import cfclient
+from PyQt5.QtCore import QThread
+from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QMessageBox
 from cfclient.utils.config_manager import ConfigManager
-from cflib.crtp.exceptions import CommunicationException
-
-from PyQt4 import Qt, QtCore, QtGui, uic
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.Qt import *
-
-from cfclient.utils.input import JoystickReader
+from PyQt5 import Qt
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+from PyQt5.Qt import *  # noqa
 
 __author__ = 'Bitcraze AB'
 __all__ = ['InputConfigDialogue']
@@ -50,11 +46,12 @@ __all__ = ['InputConfigDialogue']
 logger = logging.getLogger(__name__)
 
 (inputconfig_widget_class, connect_widget_base_class) = (
-    uic.loadUiType(sys.path[0] + '/cfclient/ui/dialogs/inputconfigdialogue.ui')
+    uic.loadUiType(cfclient.module_path + '/ui/dialogs/inputconfigdialogue.ui')
 )
 
 
-class InputConfigDialogue(QtGui.QWidget, inputconfig_widget_class):
+class InputConfigDialogue(QtWidgets.QWidget, inputconfig_widget_class):
+
     def __init__(self, joystickReader, *args):
         super(InputConfigDialogue, self).__init__(*args)
         self.setupUi(self)
@@ -91,8 +88,7 @@ class InputConfigDialogue(QtGui.QWidget, inputconfig_widget_class):
         self.detectThrust.clicked.connect(
             lambda: self._axis_detect(
                 "thrust", "Thrust axis",
-                "Center the thrust axis, and then do max thrust (also used to "
-                "adjust target altitude in altitude hold mode)"))
+                "Center the thrust axis, and then do max thrust"))
         self.detectPitchPos.clicked.connect(
             lambda: self._button_detect(
                 "pitchPos", "Pitch Cal Positive",
@@ -125,10 +121,10 @@ class InputConfigDialogue(QtGui.QWidget, inputconfig_widget_class):
             lambda: self._button_detect(
                 "exitapp", "Exit application",
                 "Press the button for exiting the application"))
-        self.detectAltHold.clicked.connect(
+        self._detect_assisted_control.clicked.connect(
             lambda: self._button_detect(
-                "althold", "Altitude hold",
-                "Press the button for altitude hold mode activation "
+                "assistedControl", "Assisted control",
+                "Press the button for assisted control mode activation "
                 "(releasing returns to manual mode)"))
         self.detectMuxswitch.clicked.connect(
             lambda: self._button_detect(
@@ -147,7 +143,7 @@ class InputConfigDialogue(QtGui.QWidget, inputconfig_widget_class):
             self.detectPitchPos, self.detectPitchNeg,
             self.detectRollPos, self.detectRollNeg,
             self.detectKillswitch, self.detectExitapp,
-            self.detectAltHold, self.detectAlt1,
+            self._detect_assisted_control, self.detectAlt1,
             self.detectAlt2, self.detectMuxswitch]
 
         self._button_to_detect = ""
@@ -186,7 +182,7 @@ class InputConfigDialogue(QtGui.QWidget, inputconfig_widget_class):
             "alt1": self.alt1,
             "alt2": self.alt2,
             "exitapp": self.exitapp,
-            "althold": self.althold,
+            "assistedControl": self._assisted_control,
             "muxswitch": self.muxswitch,
         }
 
@@ -206,8 +202,9 @@ class InputConfigDialogue(QtGui.QWidget, inputconfig_widget_class):
         self._mined_axis = []
         self._popup = QMessageBox()
         self._popup.directions = directions
-        self._combined_button = QtGui.QPushButton('Combined Axis Detection')
-        self.cancelButton = QtGui.QPushButton('Cancel')
+        self._combined_button = QtWidgets.QPushButton('Combined Axis ' +
+                                                      'Detection')
+        self.cancelButton = QtWidgets.QPushButton('Cancel')
         self._popup.addButton(self.cancelButton, QMessageBox.DestructiveRole)
         self._popup.setWindowTitle(caption)
         self._popup.setWindowFlags(Qt.Dialog | Qt.MSWindowsFixedSizeDialogHint)
@@ -382,46 +379,8 @@ class InputConfigDialogue(QtGui.QWidget, inputconfig_widget_class):
         logger.warning("deleteConfig not implemented")
 
     def _save_config(self):
-        configName = str(self.profileCombo.currentText())
-
-        mapping = {'inputconfig': {'inputdevice': {'axis': []}}}
-
-        # Create intermediate structure for the configuration file
-        funcs = {}
-        for m in self._map:
-            key = self._map[m]["key"]
-            if key not in funcs:
-                funcs[key] = []
-            funcs[key].append(self._map[m])
-
-        # Create a mapping for each axis, take care to handle
-        # split axis configurations
-        for a in funcs:
-            func = funcs[a]
-            axis = {}
-            # Check for split axis
-            if len(func) > 1:
-                axis["ids"] = [func[0]["id"], func[1]["id"]]
-                axis["scale"] = func[1]["scale"]
-            else:
-                axis["id"] = func[0]["id"]
-                axis["scale"] = func[0]["scale"]
-            axis["key"] = func[0]["key"]
-            axis["name"] = func[0]["key"]  # Name isn't used...
-            axis["type"] = func[0]["type"]
-            mapping["inputconfig"]["inputdevice"]["axis"].append(axis)
-
-        mapping["inputconfig"]['inputdevice']['name'] = configName
-        mapping["inputconfig"]['inputdevice']['updateperiod'] = 10
-
-        config_name = self.profileCombo.currentText()
-        filename = ConfigManager().configs_dir + "/%s.json" % config_name
-        logger.info("Saving config to [%s]", filename)
-        json_data = open(filename, 'w')
-        json_data.write(json.dumps(mapping, indent=2))
-        json_data.close()
-
-        ConfigManager().conf_needs_reload.call(config_name)
+        config_name = str(self.profileCombo.currentText())
+        ConfigManager().save_config(self._map, config_name)
         self.close()
 
     def showEvent(self, event):
@@ -451,7 +410,7 @@ class DeviceReader(QThread):
         self._read_timer = QTimer()
         self._read_timer.setInterval(25)
 
-        self.connect(self._read_timer, SIGNAL("timeout()"), self._read_input)
+        self._read_timer.timeout.connect(self._read_input)
 
     def stop_reading(self):
         """Stop polling data"""

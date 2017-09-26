@@ -34,14 +34,11 @@ more info.
 
 try:
     import leapsdk.Leap as Leap
-    from leapsdk.Leap import CircleGesture, KeyTapGesture, ScreenTapGesture, \
-        SwipeGesture
 except Exception as e:
     raise Exception(
         "Leap Motion library probably not installed ({})".format(e))
 
 import logging
-import time
 
 __author__ = 'Bitcraze AB'
 __all__ = ['LeapmotionReader']
@@ -53,6 +50,7 @@ MODULE_NAME = "Leap Motion"
 
 
 class LeapListener(Leap.Listener):
+
     def set_data_callback(self, callback):
         self._dcb = callback
         self._nbr_of_fingers = 0
@@ -118,7 +116,7 @@ class LeapmotionReader:
 
         self.data = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0,
                      "thrust": -1.0, "estop": False, "exit": False,
-                     "althold": False, "alt1": False, "alt2": False,
+                     "assistedControl": False, "alt1": False, "alt2": False,
                      "pitchNeg": False, "rollNeg": False,
                      "pitchPos": False, "rollPos": False}
         logger.info("Initialized Leap")

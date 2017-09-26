@@ -20,34 +20,34 @@
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-
 #  You should have received a copy of the GNU General Public License
 #  along with this program; if not, write to the Free Software
 #  Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301,
 # USA.
-
 """
 This tab plots different logging data defined by configurations that has been
 pre-configured.
 """
-import math
-
 import logging
-import sys
 
-from PyQt4 import QtCore, QtGui, uic, QtWebKit, QtNetwork
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from cflib.crazyflie.log import LogConfig
+import cfclient
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtWidgets import QMessageBox
 from cfclient.ui.tab import Tab
+from cflib.crazyflie.log import LogConfig
+from PyQt5 import QtCore
+from PyQt5 import QtGui
+from PyQt5 import QtNetwork
+from PyQt5 import QtWebKit
+from PyQt5 import uic
 
 __author__ = 'Bitcraze AB'
 __all__ = ['GpsTab']
 
 logger = logging.getLogger(__name__)
 
-gps_tab_class = uic.loadUiType(sys.path[0] +
-                               "/cfclient/ui/tabs/gpsTab.ui")[0]
+gps_tab_class = uic.loadUiType(cfclient.module_path +
+                               "/ui/tabs/gpsTab.ui")[0]
 
 
 class GpsTab(Tab, gps_tab_class):
@@ -74,13 +74,13 @@ class GpsTab(Tab, gps_tab_class):
         view = self.view = QtWebKit.QWebView()
 
         cache = QtNetwork.QNetworkDiskCache()
-        cache.setCacheDirectory("cache")
+        cache.setCacheDirectory(cfclient.config_path + "/cache")
         view.page().networkAccessManager().setCache(cache)
         view.page().networkAccessManager()
 
         view.page().mainFrame().addToJavaScriptWindowObject("MainWindow", self)
         view.page().setLinkDelegationPolicy(QtWebKit.QWebPage.DelegateAllLinks)
-        view.load(QtCore.QUrl(sys.path[0] + "/cfclient/resources/map.html"))
+        view.load(QtCore.QUrl(cfclient.module_path + "/resources/map.html"))
         view.loadFinished.connect(self.onLoadFinished)
         view.linkClicked.connect(QtGui.QDesktopServices.openUrl)
 
@@ -101,9 +101,11 @@ class GpsTab(Tab, gps_tab_class):
             self._connected_signal.emit)
 
         self._max_speed = 0.0
+        self._lat = 0
+        self._long = 0
 
     def onLoadFinished(self):
-        with open(sys.path[0] + "/cfclient/resources/map.js", 'r') as f:
+        with open(cfclient.module_path + "/resources/map.js", 'r') as f:
             frame = self.view.page().mainFrame()
             frame.evaluateJavaScript(f.read())
 
@@ -159,10 +161,14 @@ class GpsTab(Tab, gps_tab_class):
 
     def _log_data_received(self, timestamp, data, logconf):
         """Callback when the log layer receives new data"""
-        long = float(data["gps.lon"])/10000000.0
-        lat = float(data["gps.lat"])/10000000.0
-        self._long.setText("{:.6f}".format(long))
-        self._lat.setText("{:.6f}".format(lat))
-        self._nbr_locked_sats.setText(str(data["gps.nsat"]))
-        self._height.setText("{:.2f}".format(float(data["gps.hMSL"])))
-        self._place_cf(long, lat, 1)
+        long = float(data["gps.lon"]) / 10000000.0
+        lat = float(data["gps.lat"]) / 10000000.0
+
+        if self._lat != lat or self._long != long:
+            self._long.setText("{:.6f}".format(long))
+            self._lat.setText("{:.6f}".format(lat))
+            self._nbr_locked_sats.setText(str(data["gps.nsat"]))
+            self._height.setText("{:.2f}".format(float(data["gps.hMSL"])))
+            self._place_cf(long, lat, 1)
+            self._lat = lat
+            self._long = long

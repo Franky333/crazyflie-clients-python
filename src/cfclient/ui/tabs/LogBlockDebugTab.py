@@ -30,19 +30,17 @@ Shows all the parameters available in the Crazyflie and also gives the ability
 to edit them.
 """
 
-import time
-import sys
+from PyQt5 import QtCore, QtWidgets, uic
+from PyQt5.QtCore import Qt, pyqtSignal
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import Qt, pyqtSlot, pyqtSignal, QThread, SIGNAL
-
+import cfclient
 from cfclient.ui.tab import Tab
 
 __author__ = 'Bitcraze AB'
-__all__ = ['LogBlockTab']
+__all__ = ['LogBlockDebugTab']
 
-logblock_tab_class = uic.loadUiType(sys.path[0] +
-                                    "/cfclient/ui/tabs/logBlockDebugTab.ui")[0]
+logblock_tab_class = uic.loadUiType(cfclient.module_path +
+                                    "/ui/tabs/logBlockDebugTab.ui")[0]
 
 
 class LogBlockDebugTab(Tab, logblock_tab_class):
@@ -83,7 +81,7 @@ class LogBlockDebugTab(Tab, logblock_tab_class):
         """Update the block tree"""
         self._block_tree.clear()
         for block in self._helper.cf.log.log_blocks:
-            item = QtGui.QTreeWidgetItem()
+            item = QtWidgets.QTreeWidgetItem()
             item.setFlags(Qt.ItemIsEnabled |
                           Qt.ItemIsSelectable)
             item.setData(0, Qt.DisplayRole, block.id)
@@ -93,7 +91,7 @@ class LogBlockDebugTab(Tab, logblock_tab_class):
             item.setData(4, Qt.EditRole, block.started)
             item.setData(5, Qt.EditRole, block.err_no)
             for var in block.variables:
-                subItem = QtGui.QTreeWidgetItem()
+                subItem = QtWidgets.QTreeWidgetItem()
                 subItem.setFlags(Qt.ItemIsEnabled |
                                  Qt.ItemIsSelectable)
                 subItem.setData(6, Qt.EditRole, var.name)

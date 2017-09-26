@@ -31,8 +31,6 @@ Input interface that supports receiving commands via ZMQ.
 """
 
 import logging
-import time
-import pprint
 from threading import Thread
 
 from cfclient.utils.config import Config
@@ -57,6 +55,7 @@ MODULE_NAME = "ZMQ"
 
 
 class _PullReader(Thread):
+
     def __init__(self, receiver, callback, *args):
         super(_PullReader, self).__init__(*args)
         self._receiver = receiver
@@ -88,7 +87,7 @@ class ZMQReader:
 
         self.data = {"roll": 0.0, "pitch": 0.0, "yaw": 0.0,
                      "thrust": -1.0, "estop": False, "exit": False,
-                     "althold": False, "alt1": False, "alt2": False,
+                     "assistedControl": False, "alt1": False, "alt2": False,
                      "pitchNeg": False, "rollNeg": False,
                      "pitchPos": False, "rollPos": False}
 

@@ -20,28 +20,27 @@
 #  but WITHOUT ANY WARRANTY; without even the implied warranty of
 #  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 #  GNU General Public License for more details.
-
 #  You should have received a copy of the GNU General Public License along with
 #  this program; if not, write to the Free Software Foundation, Inc.,
 #  51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
-
 """
 A detachable toolbox for showing console printouts from the Crazyflie
 """
+from PyQt5 import QtWidgets
+from PyQt5 import uic
+from PyQt5.QtCore import pyqtSignal
+from PyQt5.QtCore import Qt
 
-import sys
-
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import Qt, pyqtSlot, pyqtSignal
+import cfclient
 
 __author__ = 'Bitcraze AB'
 __all__ = ['ConsoleToolbox']
 
 console_class = uic.loadUiType(
-    sys.path[0] + "/cfclient/ui/toolboxes/consoleToolbox.ui")[0]
+    cfclient.module_path + "/ui/toolboxes/consoleToolbox.ui")[0]
 
 
-class ConsoleToolbox(QtGui.QWidget, console_class):
+class ConsoleToolbox(QtWidgets.QWidget, console_class):
     """Console toolbox for showing printouts from the Crazyflie"""
     update = pyqtSignal(str)
 
@@ -56,11 +55,15 @@ class ConsoleToolbox(QtGui.QWidget, console_class):
     def getName(self):
         return 'Console'
 
+    def _console_updated(self, data):
+        self.update.emit(data)
+
     def enable(self):
-        self.helper.cf.console.receivedChar.add_callback(self.update.emit)
+        self.helper.cf.console.receivedChar.add_callback(self._console_updated)
 
     def disable(self):
-        self.helper.cf.console.receivedChar.remove_callback(self.update.emit)
+        self.helper.cf.console.receivedChar.remove_callback(
+            self._console_updated)
 
     def preferedDockArea(self):
         return Qt.BottomDockWidgetArea

@@ -31,16 +31,15 @@ enable logging of data from the Crazyflie. These can then be used in different
 views in the UI.
 """
 
-import sys
-import os
 import logging
 
-from PyQt4 import Qt, QtCore, QtGui, uic
-from PyQt4.QtCore import *
-from PyQt4.QtGui import *
-from PyQt4.Qt import *
+import cfclient
+from PyQt5 import Qt, QtWidgets, uic
+from PyQt5.QtCore import *  # noqa
+from PyQt5.QtWidgets import *  # noqa
+from PyQt5.Qt import *  # noqa
 
-from cflib.crazyflie.log import Log, LogVariable, LogConfig
+from cflib.crazyflie.log import LogConfig
 
 __author__ = 'Bitcraze AB'
 __all__ = ['LogConfigDialogue']
@@ -48,7 +47,7 @@ __all__ = ['LogConfigDialogue']
 logger = logging.getLogger(__name__)
 
 (logconfig_widget_class, connect_widget_base_class) = (
-    uic.loadUiType(sys.path[0] + '/cfclient/ui/dialogs/logconfigdialogue.ui'))
+    uic.loadUiType(cfclient.module_path + '/ui/dialogs/logconfigdialogue.ui'))
 
 NAME_FIELD = 0
 ID_FIELD = 1
@@ -56,7 +55,8 @@ PTYPE_FIELD = 2
 CTYPE_FIELD = 3
 
 
-class LogConfigDialogue(QtGui.QWidget, logconfig_widget_class):
+class LogConfigDialogue(QtWidgets.QWidget, logconfig_widget_class):
+
     def __init__(self, helper, *args):
         super(LogConfigDialogue, self).__init__(*args)
         self.setupUi(self)
@@ -75,7 +75,7 @@ class LogConfigDialogue(QtGui.QWidget, logconfig_widget_class):
 
         self.loggingPeriod.textChanged.connect(self.periodChanged)
 
-        self.packetSize.setMaximum(30)
+        self.packetSize.setMaximum(26)
         self.currentSize = 0
         self.packetSize.setValue(0)
         self.period = 0
@@ -116,7 +116,14 @@ class LogConfigDialogue(QtGui.QWidget, logconfig_widget_class):
             for leaf in self.getNodeChildren(node):
                 self.currentSize = (self.currentSize +
                                     self.decodeSize(leaf.text(CTYPE_FIELD)))
-        self.packetSize.setValue(self.currentSize)
+        if self.currentSize > 26:
+            self.packetSize.setMaximum(self.currentSize / 26.0 * 100.0)
+            self.packetSize.setFormat("%v%")
+            self.packetSize.setValue(self.currentSize / 26.0 * 100.0)
+        else:
+            self.packetSize.setMaximum(26)
+            self.packetSize.setFormat("%p%")
+            self.packetSize.setValue(self.currentSize)
 
     def addNewVar(self, logTreeItem, target):
         parentName = logTreeItem.parent().text(NAME_FIELD)
@@ -125,7 +132,7 @@ class LogConfigDialogue(QtGui.QWidget, logconfig_widget_class):
         item = logTreeItem.clone()
 
         if (len(varParent) == 0):
-            newParent = QtGui.QTreeWidgetItem()
+            newParent = QtWidgets.QTreeWidgetItem()
             newParent.setData(0, Qt.DisplayRole, parentName)
             newParent.addChild(item)
             target.addTopLevelItem(newParent)
@@ -152,7 +159,7 @@ class LogConfigDialogue(QtGui.QWidget, logconfig_widget_class):
         self.checkAndEnableSaveButton()
 
     def checkAndEnableSaveButton(self):
-        if (self.currentSize > 0 and self.period > 0):
+        if self.currentSize > 0 and self.period > 0 and self.currentSize <= 26:
             self.saveButton.setEnabled(True)
         else:
             self.saveButton.setEnabled(False)
@@ -195,7 +202,7 @@ class LogConfigDialogue(QtGui.QWidget, logconfig_widget_class):
             self.period = 0
 
     def showErrorPopup(self, caption, message):
-        self.box = QMessageBox()
+        self.box = QMessageBox()  # noqa
         self.box.setWindowTitle(caption)
         self.box.setText(message)
         # self.box.setButtonText(1, "Ok")
@@ -208,10 +215,10 @@ class LogConfigDialogue(QtGui.QWidget, logconfig_widget_class):
         toc = self.helper.cf.log.toc
 
         for group in list(toc.toc.keys()):
-            groupItem = QtGui.QTreeWidgetItem()
+            groupItem = QtWidgets.QTreeWidgetItem()
             groupItem.setData(NAME_FIELD, Qt.DisplayRole, group)
             for param in list(toc.toc[group].keys()):
-                item = QtGui.QTreeWidgetItem()
+                item = QtWidgets.QTreeWidgetItem()
                 item.setData(NAME_FIELD, Qt.DisplayRole, param)
                 item.setData(ID_FIELD, Qt.DisplayRole,
                              toc.toc[group][param].ident)

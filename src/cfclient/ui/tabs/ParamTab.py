@@ -30,23 +30,21 @@ Shows all the parameters available in the Crazyflie and also gives the ability
 to edit them.
 """
 
-import sys
 import logging
 
-from PyQt4 import QtCore, QtGui, uic
-from PyQt4.QtCore import Qt, pyqtSlot, pyqtSignal, QThread, SIGNAL
-from PyQt4.QtCore import QAbstractItemModel, QModelIndex
-from PyQt4.QtGui import QApplication, QStyledItemDelegate, QAbstractItemView, \
-    QBrush, QColor
-from PyQt4.QtGui import QSortFilterProxyModel
+from PyQt5 import uic
+from PyQt5.QtCore import Qt, pyqtSignal
+from PyQt5.QtCore import QAbstractItemModel, QModelIndex
+from PyQt5.QtGui import QBrush, QColor
 
+import cfclient
 from cfclient.ui.tab import Tab
 
 __author__ = 'Bitcraze AB'
 __all__ = ['ParamTab']
 
 param_tab_class = uic.loadUiType(
-    sys.path[0] + "/cfclient/ui/tabs/paramTab.ui")[0]
+    cfclient.module_path + "/ui/tabs/paramTab.ui")[0]
 
 logger = logging.getLogger(__name__)
 
@@ -218,8 +216,9 @@ class ParamBlockModel(QAbstractItemModel):
 
     def reset(self):
         """Reset the model"""
+        super(ParamBlockModel, self).beginResetModel()
         self._nodes = []
-        super(ParamBlockModel, self).reset()
+        super(ParamBlockModel, self).endResetModel()
         self.layoutChanged.emit()
 
 
@@ -257,4 +256,6 @@ class ParamTab(Tab, param_tab_class):
         self.paramTree.expandAll()
 
     def _disconnected(self, link_uri):
+        self._model.beginResetModel()
         self._model.reset()
+        self._model.endResetModel()
